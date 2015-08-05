@@ -22,6 +22,12 @@ RINCLUDES = \
   -I${G4_MAIN}/include/Geant4
 
 libcemc_io_la_SOURCES = \
+  CaloTower.cc \
+  CaloTower_Dict.cc \
+  CaloTowerv1.cc \
+  CaloTowerv1_Dict.cc \
+  CaloTowerContainer.cc \
+  CaloTowerContainer_Dict.cc \
   RawCluster_Dict.cc \
   RawClusterv1.cc \
   RawClusterv1_Dict.cc \
