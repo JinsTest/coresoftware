@@ -1,3 +1,6 @@
+#ifndef CALOTOWERID_H__
+#define CALOTOWERID_H__
+
 #include <string>
 
 /*! Namespace with functions to set / extract
@@ -62,7 +65,7 @@ namespace calotowerid
 
   /*! Returns CaloTowerID for given CalirometerID, index 1, and index 2 of tower
    */
-  unsigned int Encode( const CalorimeterIds calo_id , const unsigned int tower_index_1 = 0 , const unsigned int tower_index_2 = 0){
+  inline unsigned int Encode( const CalorimeterIds calo_id , const unsigned int tower_index_1 = 0 , const unsigned int tower_index_2 = 0){
 
     unsigned int calo_tower_id = 0;
 
@@ -87,7 +90,7 @@ namespace calotowerid
 
   /*! Extract ID number of calorimeter from CaloTowerID
    */
-  unsigned int DecodeCalorimeterId( const unsigned int calo_tower_id ){
+  inline unsigned int DecodeCalorimeterId( const unsigned int calo_tower_id ){
 
     return ( calo_tower_id & calotowerid::kCaloIdMask ) >> calotowerid::kBitShiftCaloId;
 
@@ -96,7 +99,7 @@ namespace calotowerid
 
   /*! Extract index 1 of calorimeter tower from CaloTowerID
    */
-  unsigned int DecodeTowerIndex1( const unsigned int calo_tower_id ){
+  inline unsigned int DecodeTowerIndex1( const unsigned int calo_tower_id ){
 
     return ( calo_tower_id & calotowerid::kTowerIndex1Mask ) >> calotowerid::kBitShiftTowerIndex1;
 
@@ -105,7 +108,7 @@ namespace calotowerid
 
   /*! Extract index 2 of calorimeter tower from CaloTowerID
    */
-  unsigned int DecodeTowerIndex2( const unsigned int calo_tower_id ){
+  inline unsigned int DecodeTowerIndex2( const unsigned int calo_tower_id ){
 
     return ( calo_tower_id & calotowerid::kTowerIndex2Mask ) >> calotowerid::kBitShiftTowerIndex2;
 
@@ -114,7 +117,7 @@ namespace calotowerid
 
   /*! Extract name of calorimeter from CaloTowerID
    */
-  std::string DecodeCalorimeterName( const unsigned int calo_tower_id ){
+  inline std::string DecodeCalorimeterName( const unsigned int calo_tower_id ){
 
     unsigned int calo_id = calotowerid::DecodeCalorimeterId( calo_tower_id );
 
@@ -159,7 +162,7 @@ namespace calotowerid
   /*! Returns new CaloTowerID with the highest 8 bits set to encode
    * given calorimeter
    */
-  unsigned int ChangeCalorimeterId( const unsigned int calo_tower_id , const CalorimeterIds calo_id ){
+  inline unsigned int ChangeCalorimeterId( const unsigned int calo_tower_id , const CalorimeterIds calo_id ){
 
     // shift caloID
     unsigned int calo_id_shift = calo_id << calotowerid::kBitShiftCaloId;
@@ -175,3 +178,5 @@ namespace calotowerid
   }
 
 };
+
+#endif
