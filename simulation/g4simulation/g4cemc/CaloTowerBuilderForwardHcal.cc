@@ -76,7 +76,7 @@ CaloTowerBuilderForwardHcal::process_event(PHCompositeNode *topNode)
       PHG4Hit* g4hit_i =  hiter->second ;
 
       /* encode CaloTowerID from j, k index of tower / hit and calorimeter ID */
-      unsigned int calotowerid = calotowerid::Encode( calotowerid::HHCAL ,
+      unsigned int calotowerid = calotowerid::Encode( calotowerid::FHCAL ,
 						      g4hit_i->get_index_j() ,
 						      g4hit_i->get_index_k() );
 
