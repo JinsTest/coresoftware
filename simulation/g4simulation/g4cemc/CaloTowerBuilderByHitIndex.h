@@ -1,5 +1,5 @@
-#ifndef _CALO_TOWER_BUILDER_FORWARD_HCALH__
-#define _CALO_TOWER_BUILDER_FORWARD_HCALH__
+#ifndef _CALO_TOWER_BUILDER_BY_HIT_INDEX__
+#define _CALO_TOWER_BUILDER_BY_HIT_INDEX__
 
 #include <fun4all/SubsysReco.h>
 #include <string>
@@ -11,17 +11,18 @@ class CaloTowerContainer;
 class PHG4HitContainer;
 
 /**
- * \brief SubsysReco module creating calorimeter tower objects (RawTowerv2) from hits
+ * \brief SubsysReco module creating calorimeter tower objects (CaloTowerv1) from hits
  * (PHG4Hit) using j,k indeces of these hits
  *
  * \author Nils Feege <nils.feege@stonybrook.edu>
  *
  */
-class CaloTowerBuilderForwardHcal : public SubsysReco {
+class CaloTowerBuilderByHitIndex : public SubsysReco {
 
 public:
-  CaloTowerBuilderForwardHcal(const std::string& name="CaloTowerBuilderForwardHcal");
-  virtual ~CaloTowerBuilderForwardHcal(){}
+
+  CaloTowerBuilderByHitIndex(const std::string& name="CaloTowerBuilderByHitIndex");
+  virtual ~CaloTowerBuilderByHitIndex(){}
 
   int InitRun(PHCompositeNode *topNode);
 
@@ -31,29 +32,30 @@ public:
 
   /** Name of the detector node the G4Hits should be taken from.
    */
-  void Detector(const std::string &d) {detector = d;}
+  void Detector(const std::string &d) {detector_ = d;}
 
   /** Define minimum tower energy. After processing an event, towers with lower energy
    * are will be deleted.
    */
-  void EminCut(const double e) {emin = e;}
+  void EminCut(const double e) {emin_ = e;}
 
 protected:
+
   /** Create nodes for output.
    *
    * Name of output node for RawTowerContainer: "TOWER_" + detector;
    */
   void CreateNodes(PHCompositeNode *topNode);
 
-  CaloTowerContainer* _towers;
+  CaloTowerContainer* towers_;
 
-  std::string detector;
-  std::string hitnodename;
-  std::string TowerNodeName;
+  std::string detector_;
+  std::string node_name_hits_;
+  std::string node_name_towers_;
 
-  double emin;
+  double emin_;
 
-  PHTimeServer::timer _timer;
+  PHTimeServer::timer timer_;
 
 };
 

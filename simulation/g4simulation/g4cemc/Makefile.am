@@ -49,12 +49,10 @@ libcemc_io_la_SOURCES = \
   RawTowerGeomv2_Dict.cc
 
 libcemc_la_SOURCES = \
-  CaloTowerBuilderForwardHcal.cc \
-  CaloTowerBuilderForwardHcal_Dict.cc \
+  CaloTowerBuilderByHitIndex.cc \
+  CaloTowerBuilderByHitIndex_Dict.cc \
   CrystalCalorimeterDigitization.cc \
   CrystalCalorimeterDigitization_Dict.cc \
-  CrystalCalorimeterTowerBuilder.cc \
-  CrystalCalorimeterTowerBuilder_Dict.cc \
   RawClusterBuilder.cc \
   RawClusterBuilder_Dict.cc \
   RawClusterBuilderv1.cc \
