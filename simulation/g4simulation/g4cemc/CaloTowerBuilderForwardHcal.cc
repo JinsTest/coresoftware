@@ -75,19 +75,16 @@ CaloTowerBuilderForwardHcal::process_event(PHCompositeNode *topNode)
     {
       PHG4Hit* g4hit_i =  hiter->second ;
 
-      /* calculate CaloTowerID from j, k index of tower / hit and calorimeter ID */
-      unsigned int towerid = g4hit_i->get_index_j() << 12;
-      towerid = towerid | g4hit_i->get_index_k();
-      //g4hit_i->get_index_l();
-
-      /* encode calorimeter ID in towerID */
-      towerid = CaloTowerID::SetCalorimeter( towerid , CaloTowerID::hHCAL );
+      /* encode CaloTowerID from j, k index of tower / hit and calorimeter ID */
+      unsigned int calotowerid = calotowerid::Encode( calotowerid::HHCAL ,
+						      g4hit_i->get_index_j() ,
+						      g4hit_i->get_index_k() );
 
       /* add the energy to the corresponding tower */
-      CaloTowerv1 *tower = dynamic_cast<CaloTowerv1 *> (_towers->getTower( towerid ));
+      CaloTowerv1 *tower = dynamic_cast<CaloTowerv1 *> (_towers->getTower( calotowerid ));
       if (! tower)
         {
-          tower = new CaloTowerv1( towerid );
+          tower = new CaloTowerv1( calotowerid );
           _towers->AddTower( tower );
         }
       tower->add_ecell(g4hit_i->get_trkid(), g4hit_i->get_edep());
