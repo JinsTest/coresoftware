@@ -26,6 +26,18 @@ namespace calotowerid
     HHCAL,
   };
 
+  /*! Bit shift left << for encoding calorimeter id
+   */
+  const unsigned int kBitShiftCaloId = 24;
+
+  /*! Bit shift left << for encoding tower index 1
+   */
+  const unsigned int kBitShiftTowerIndex1 = 12;
+
+  /*! Bit shift left << for encoding tower index 2
+   */
+  const unsigned int kBitShiftTowerIndex2 = 0;
+
 
   /*! binary 0000 0000 1111 1111 1111 1111 1111 1111 to set
    * calorimeter ID to 0
@@ -62,8 +74,8 @@ namespace calotowerid
    */
   unsigned int ChangeCalorimeterId( const unsigned int calo_tower_id , const CalorimeterIds calo_id ){
 
-    // shift caloID by 24 bits
-    unsigned int calo_id_shift = calo_id << 24;
+    // shift caloID
+    unsigned int calo_id_shift = calo_id << calotowerid::kBitShiftCaloId;
 
     // clear old calorimeter ID
     unsigned int calo_tower_id_new = calo_tower_id & calotowerid::kCaloIdZeroMask;
@@ -80,8 +92,7 @@ namespace calotowerid
    */
   unsigned int DecodeCalorimeterId( const unsigned int calo_tower_id ){
 
-    // make 8 bits of calorimeter ID the lowest 8 bits of this integer
-    return calo_tower_id & calotowerid::kCaloIdMask;
+    return ( calo_tower_id & calotowerid::kCaloIdMask ) >> calotowerid::kBitShiftCaloId;
 
   }
 
@@ -90,8 +101,7 @@ namespace calotowerid
    */
   unsigned int DecodeTowerIndex1( const unsigned int calo_tower_id ){
 
-    // make 8 bits of calorimeter ID the lowest 8 bits of this integer
-    return calo_tower_id & calotowerid::kTowerIndex1Mask;
+    return ( calo_tower_id & calotowerid::kTowerIndex1Mask ) >> calotowerid::kBitShiftTowerIndex1;
 
   }
 
@@ -100,8 +110,7 @@ namespace calotowerid
    */
   unsigned int DecodeTowerIndex2( const unsigned int calo_tower_id ){
 
-    // make 8 bits of calorimeter ID the lowest 8 bits of this integer
-    return calo_tower_id & calotowerid::kTowerIndex2Mask;
+    return ( calo_tower_id & calotowerid::kTowerIndex2Mask ) >> calotowerid::kBitShiftTowerIndex2;
 
   }
 
@@ -153,13 +162,13 @@ namespace calotowerid
     unsigned int calo_tower_id = 0;
 
     // shift caloID by 24 bits
-    unsigned int calo_id_shift = calo_id << 24;
+    unsigned int calo_id_shift = calo_id << calotowerid::kBitShiftCaloId;
 
     // shift tower_index_1 by 12 bits
-    unsigned int tower_index_1_shift = tower_index_1 << 12;
+    unsigned int tower_index_1_shift = tower_index_1 << calotowerid::kBitShiftTowerIndex1;
 
     // shift tower_index_2 by 0 bits
-    unsigned int tower_index_2_shift = tower_index_2 << 0;
+    unsigned int tower_index_2_shift = tower_index_2 << calotowerid::kBitShiftTowerIndex2;
 
     // encode calorimeter ID
     calo_tower_id = calo_tower_id | calo_id_shift;
