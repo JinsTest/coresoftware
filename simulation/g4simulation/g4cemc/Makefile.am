@@ -49,6 +49,8 @@ libcemc_io_la_SOURCES = \
   RawTowerGeomv2_Dict.cc
 
 libcemc_la_SOURCES = \
+  CaloTowerBuilderForwardHcal.cc \
+  CaloTowerBuilderForwardHcal_Dict.cc \
   CrystalCalorimeterDigitization.cc \
   CrystalCalorimeterDigitization_Dict.cc \
   CrystalCalorimeterTowerBuilder.cc \
@@ -93,6 +95,10 @@ libcemc_la_LIBADD = \
 # please add new classes in alphabetical order
 
 pkginclude_HEADERS = \
+  CaloTowerID.h \
+  CaloTower.h \
+  CaloTowerv1.h \
+  CaloTowerContainer.h \
   RawCluster.h \
   RawClusterContainer.h \
   RawTower.h \
