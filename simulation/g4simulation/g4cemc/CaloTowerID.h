@@ -156,16 +156,6 @@ namespace calotowerid
   }
 
 
-  /*! Returns the local tower ID, i.e. it strips the highest 8 bits
-   * which encode the calorimeter this tower is in
-   */
-  unsigned int StripCalorimeterId( const unsigned int calo_tower_id ){
-
-    return calo_tower_id & calotowerid::kCaloIdZeroMask;
-
-  }
-
-
   /*! Returns new CaloTowerID with the highest 8 bits set to encode
    * given calorimeter
    */
