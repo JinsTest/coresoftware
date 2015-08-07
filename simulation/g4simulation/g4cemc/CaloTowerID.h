@@ -27,11 +27,25 @@ namespace calotowerid
   };
 
 
-  /*! binary 00000000111111111111111111111111 to set
+  /*! binary 0000 0000 1111 1111 1111 1111 1111 1111 to set
    * calorimeter ID to 0
    */
   const unsigned int kCaloIdZeroMask = 16777215;
 
+  /*! binary 1111 1111 0000 0000 0000 0000 0000 0000 to mask
+   * everything but CaloTowerID
+   */
+  const unsigned int kCaloIdMask = 4278190080;
+
+  /*! binary 0000 0000 1111 1111 1111 0000 0000 0000 to mask
+   * everything but tower index 1
+   */
+  const unsigned int kTowerIndex1Mask = 16773120;
+
+  /*! binary 0000 0000  0000 0000 0000 1111 1111 1111 to mask
+   * everything but tower index 2
+   */
+  const unsigned int kTowerIndex2Mask = 4095;
 
   /*! Returns the local tower ID, i.e. it strips the highest 8 bits
    * which encode the calorimeter this tower is in
@@ -64,17 +78,37 @@ namespace calotowerid
 
   /*! Extract ID number of calorimeter from CaloTowerID
    */
-  unsigned int ExtractCalorimeterId( const unsigned int calo_tower_id ){
+  unsigned int DecodeCalorimeterId( const unsigned int calo_tower_id ){
 
     // make 8 bits of calorimeter ID the lowest 8 bits of this integer
-    return calo_tower_id >> 24;
+    return calo_tower_id & calotowerid::kCaloIdMask;
+
+  }
+
+
+  /*! Extract index 1 of calorimeter tower from CaloTowerID
+   */
+  unsigned int DecodeTowerIndex1( const unsigned int calo_tower_id ){
+
+    // make 8 bits of calorimeter ID the lowest 8 bits of this integer
+    return calo_tower_id & calotowerid::kTowerIndex1Mask;
+
+  }
+
+
+  /*! Extract index 2 of calorimeter tower from CaloTowerID
+   */
+  unsigned int DecodeTowerIndex2( const unsigned int calo_tower_id ){
+
+    // make 8 bits of calorimeter ID the lowest 8 bits of this integer
+    return calo_tower_id & calotowerid::kTowerIndex2Mask;
 
   }
 
 
   /*! Extract name of calorimeter from CaloTowerID
    */
-  std::string ExtractCalorimeterName( const unsigned int calo_tower_id ){
+  std::string DecodeCalorimeterName( const unsigned int calo_tower_id ){
 
     unsigned int calo_id = calotowerid::DecodeCalorimeterId( calo_tower_id );
 
@@ -108,6 +142,31 @@ namespace calotowerid
       return "NONE";
 
     }
+
+  }
+
+
+  /*! Returns CaloTowerID for given CalirometerID, index 1, and index 2 of tower
+   */
+  unsigned int Encode( const CalorimeterIds calo_id , const unsigned int tower_index_1 = 0 , const unsigned int tower_index_2 = 0){
+
+    unsigned int calo_tower_id = 0;
+
+    // shift caloID by 24 bits
+    unsigned int calo_id_shift = calo_id << 24;
+
+    // shift tower_index_1 by 12 bits
+    unsigned int tower_index_1_shift = tower_index_1 << 12;
+
+    // shift tower_index_2 by 0 bits
+    unsigned int tower_index_2_shift = tower_index_2 << 0;
+
+    // encode calorimeter ID
+    calo_tower_id = calo_tower_id | calo_id_shift;
+    calo_tower_id = calo_tower_id | tower_index_1_shift;
+    calo_tower_id = calo_tower_id | tower_index_2_shift;
+
+    return calo_tower_id;
 
   }
 
