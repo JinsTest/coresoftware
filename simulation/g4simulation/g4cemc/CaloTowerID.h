@@ -60,7 +60,7 @@ namespace calotowerid
   /*! Returns new CaloTowerID with the highest 8 bits set to encode
    * given calorimeter
    */
-  unsigned int ChangeCalorimeterId( const unsigned int calo_tower_it , const CalorimeterIds calo_id ){
+  unsigned int ChangeCalorimeterId( const unsigned int calo_tower_id , const CalorimeterIds calo_id ){
 
     // shift caloID by 24 bits
     unsigned int calo_id_shift = calo_id << 24;
@@ -114,7 +114,7 @@ namespace calotowerid
 
     switch ( calo_id ){
 
-    case CEMCL:
+    case CEMC:
       return "CEMC";
       break;
 
