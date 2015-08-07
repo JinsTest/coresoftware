@@ -5,6 +5,9 @@
  * This 32 bit integer uniquely identifies each tower in the whole detector- the highest eight bits
  * contain an ID for the calorimeter, and the lower 24 bits contain an ID for the tower within
  * a given calorimeter.
+ *
+ * \author Nils Feege <nils.feege@stonybrook.edu>
+ *
  */
 namespace CaloTowerID
 {
@@ -27,15 +30,15 @@ namespace CaloTowerID
   /*! binary 00000000111111111111111111111111 to set
    * calorimeter ID to 0
    */
-  int caloID_zero = 16777215;
+  unsigned int caloID_zero = 16777215;
 
 
   /*! Returns the local tower ID, i.e. it strips the highest 8 bits
    * which encode the calorimeter this tower is in
    */
-  int GetLocalCaloTowerID( int caloTowerID ){
+  unsigned int GetLocalCaloTowerID( unsigned int caloTowerID ){
 
-    return caloTowerID & caloID_zero;
+    return caloTowerID & CaloTowerID::caloID_zero;
 
   }
 
@@ -43,13 +46,13 @@ namespace CaloTowerID
   /*! Returns new CaloTowerID with the highest 8 bits set to encode
    * given calorimeter
    */
-  int SetCalorimeter( int caloTowerID , Calorimeter_t caloID ){
+  unsigned int SetCalorimeter( unsigned int caloTowerID , Calorimeter_t caloID ){
 
     // shift caloID by 24 bits
-    int caloID_shift = caloID << 24;
+    unsigned int caloID_shift = caloID << 24;
 
     // clear old calorimeter ID
-    int caloTowerID_new = caloTowerID & CaloTowerID::caloID_zero;
+    unsigned int caloTowerID_new = caloTowerID & CaloTowerID::caloID_zero;
 
     // set new calorimeter ID
     caloTowerID_new = caloTowerID_new | caloID_shift;
@@ -61,7 +64,7 @@ namespace CaloTowerID
 
   /*! Extract ID number of calorimeter from CaloTowerID
    */
-  int GetCalorimeter( int caloTowerID ){
+  unsigned int GetCalorimeter( unsigned int caloTowerID ){
 
     // make 8 bits of calorimeter ID the lowest 8 bits of this integer
     return caloTowerID >> 24;
@@ -71,9 +74,9 @@ namespace CaloTowerID
 
   /*! Extract name of calorimeter from CaloTowerID
    */
-  std::string GetCalorimeterName( int caloTowerID ){
+  std::string GetCalorimeterName( unsigned int caloTowerID ){
 
-    int caloid = CaloTowerID::GetCalorimeter( caloTowerID );
+    unsigned int caloid = CaloTowerID::GetCalorimeter( caloTowerID );
 
     switch ( caloid ){
 
