@@ -8,7 +8,7 @@
 
 class CaloTower;
 
-class CaloTowerContainer : public PHObject 
+class CaloTowerContainer : public PHObject
 {
 
  public:
@@ -25,15 +25,14 @@ class CaloTowerContainer : public PHObject
   void Reset();
   int isValid() const;
   void identify(std::ostream& os=std::cout) const;
-  ConstIterator AddTower(const int ieta, const int iphi, CaloTower *twr);
-  CaloTower *getTower(const int ieta, const int iphi);
+  ConstIterator AddTower( CaloTower *twr );
+  CaloTower *getTower( const unsigned int towerid );
   //! return all towers
   ConstRange getTowers( void ) const;
 
   unsigned int size() const {return _towers.size();}
   void compress(const double emin);
   double getTotalEdep() const;
-  unsigned int genkey(const unsigned int ieta, const unsigned int iphi) const;
 
  protected:
   Map _towers;

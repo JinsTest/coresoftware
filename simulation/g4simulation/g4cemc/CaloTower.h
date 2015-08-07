@@ -9,7 +9,8 @@
 class CaloTower : public PHObject {
 
  public:
-  CaloTower() {}
+  CaloTower( ) {}
+  CaloTower( const unsigned int ) {}
   virtual ~CaloTower() {}
 
   virtual void Reset() { PHOOL_VIRTUAL_WARNING; }

@@ -8,23 +8,7 @@ ClassImp(CaloTowerContainer)
 
 using namespace std;
 
-unsigned int
-CaloTowerContainer::genkey(const unsigned int ieta, const unsigned int iphi) const
-{
-  if (ieta > 0xFFFF || iphi > 0xFFFF)
-    {
-      cout << "ieta " << ieta << " or iphi " << iphi 
-	   << " exceed max length of " << 0xFFFF << endl;
-      cout << "reconsider the generation of unique keys" << endl;
-      exit(1);
-    }
-  unsigned int key = 0;
-  key |= (ieta << 16);
-  key |= iphi;
-  return key;
-}
-
-void 
+void
 CaloTowerContainer::compress(const double emin)
 {
   if (emin <= 0) // no need to loop through the map if we don't apply a cut
@@ -55,17 +39,17 @@ CaloTowerContainer::getTowers( void ) const
 }
 
 CaloTowerContainer::ConstIterator
-CaloTowerContainer::AddTower(const int ieta, const int iphi, CaloTower *rawtower)
+CaloTowerContainer::AddTower(CaloTower *calotower)
 {
-  unsigned int key = genkey(ieta,iphi);
-  _towers[key] = rawtower;
+  unsigned int key = calotower->get_id();
+  _towers[key] = calotower;
   return _towers.find(key);
 }
 
 CaloTower *
-CaloTowerContainer::getTower(const int ieta, const int iphi)
+CaloTowerContainer::getTower(const unsigned int towerid)
 {
-  unsigned int key = genkey(ieta,iphi);
+  unsigned int key = towerid;
   Iterator it = _towers.find(key);
   if (it != _towers.end())
     {
@@ -74,7 +58,7 @@ CaloTowerContainer::getTower(const int ieta, const int iphi)
   return NULL;
 }
 
-int 
+int
 CaloTowerContainer::isValid() const
 {
   return (!_towers.empty());
@@ -90,7 +74,7 @@ CaloTowerContainer::Reset()
     }
 }
 
-void 
+void
 CaloTowerContainer::identify(std::ostream& os) const
 {
   os << "CaloTowerContainer, number of towers: " << size() << std::endl;
