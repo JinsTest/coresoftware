@@ -9,7 +9,7 @@
  * \author Nils Feege <nils.feege@stonybrook.edu>
  *
  */
-namespace CaloTowerID
+namespace calotowerid
 {
 
   /*! List of available calorimeter IDs.
@@ -17,28 +17,28 @@ namespace CaloTowerID
    * '0' is effectively reserved for 'no calorimeter defined' which should not happen when you run the code-
    * each tower is to be in SOME calorimeter.
    */
-  enum Calorimeter_t {
-    cECAL=1,
-    cHCAL_INNER,
-    cHCAL_OUTER,
-    eECAL,
-    hECAL,
-    hHCAL,
+  enum CalorimeterIds {
+    CEMC=1,
+    HCALOUT,
+    HCALIN,
+    EEMC,
+    HEMC,
+    HHCAL,
   };
 
 
   /*! binary 00000000111111111111111111111111 to set
    * calorimeter ID to 0
    */
-  unsigned int caloID_zero = 16777215;
+  const unsigned int kCaloIdZeroMask = 16777215;
 
 
   /*! Returns the local tower ID, i.e. it strips the highest 8 bits
    * which encode the calorimeter this tower is in
    */
-  unsigned int GetLocalCaloTowerID( unsigned int caloTowerID ){
+  unsigned int StripCalorimeterId( const unsigned int calo_tower_id ){
 
-    return caloTowerID & CaloTowerID::caloID_zero;
+    return calo_tower_id & calotowerid::kCaloIdZeroMask;
 
   }
 
@@ -46,62 +46,62 @@ namespace CaloTowerID
   /*! Returns new CaloTowerID with the highest 8 bits set to encode
    * given calorimeter
    */
-  unsigned int SetCalorimeter( unsigned int caloTowerID , Calorimeter_t caloID ){
+  unsigned int ChangeCalorimeterId( const unsigned int calo_tower_it , const CalorimeterIds calo_id ){
 
     // shift caloID by 24 bits
-    unsigned int caloID_shift = caloID << 24;
+    unsigned int calo_id_shift = calo_id << 24;
 
     // clear old calorimeter ID
-    unsigned int caloTowerID_new = caloTowerID & CaloTowerID::caloID_zero;
+    unsigned int calo_tower_id_new = calo_tower_id & calotowerid::kCaloIdZeroMask;
 
     // set new calorimeter ID
-    caloTowerID_new = caloTowerID_new | caloID_shift;
+    calo_tower_id_new = calo_tower_id_new | calo_id_shift;
 
-    return caloTowerID_new;
+    return calo_tower_id_new;
 
   }
 
 
   /*! Extract ID number of calorimeter from CaloTowerID
    */
-  unsigned int GetCalorimeter( unsigned int caloTowerID ){
+  unsigned int ExtractCalorimeterId( const unsigned int calo_tower_id ){
 
     // make 8 bits of calorimeter ID the lowest 8 bits of this integer
-    return caloTowerID >> 24;
+    return calo_tower_id >> 24;
 
   }
 
 
   /*! Extract name of calorimeter from CaloTowerID
    */
-  std::string GetCalorimeterName( unsigned int caloTowerID ){
+  std::string ExtractCalorimeterName( const unsigned int calo_tower_id ){
 
-    unsigned int caloid = CaloTowerID::GetCalorimeter( caloTowerID );
+    unsigned int calo_id = calotowerid::DecodeCalorimeterId( calo_tower_id );
 
-    switch ( caloid ){
+    switch ( calo_id ){
 
-    case cECAL:
-      return "cECAL";
+    case CEMCL:
+      return "CEMC";
       break;
 
-    case cHCAL_INNER:
-      return "cHCAL_INNER";
+    case HCALIN:
+      return "HCALIN";
       break;
 
-    case cHCAL_OUTER:
-      return "cHCAL_OUTER";
+    case HCALOUT:
+      return "HCALOUT";
       break;
 
-    case eECAL:
-      return "eECAL";
+    case EEMC:
+      return "EEMC";
       break;
 
-    case hECAL:
-      return "hECAL";
+    case HEMC:
+      return "HEMC";
       break;
 
-    case hHCAL:
-      return "hHCAL";
+    case HHCAL:
+      return "HHCAL";
       break;
 
     default:
