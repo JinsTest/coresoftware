@@ -14,11 +14,12 @@ namespace calotowerid
 
   /*! List of available calorimeter IDs.
    * This enum can be safely extended up to 254 entries total but NO ALTERATIONS of existing entries.
-   * '0' is effectively reserved for 'no calorimeter defined' which should not happen when you run the code-
-   * each tower is to be in SOME calorimeter.
+   *
+   * If you ADD a new CalorimeterID, please add it also to the DecodeCalorimeterName function below.
    */
   enum CalorimeterIds {
-    CEMC=1,
+    NONE,
+    CEMC,
     HCALOUT,
     HCALIN,
     EEMC,
@@ -37,7 +38,6 @@ namespace calotowerid
   /*! Bit shift left << for encoding tower index 2
    */
   const unsigned int kBitShiftTowerIndex2 = 0;
-
 
   /*! binary 0000 0000 1111 1111 1111 1111 1111 1111 to set
    * calorimeter ID to 0
@@ -59,31 +59,28 @@ namespace calotowerid
    */
   const unsigned int kTowerIndex2Mask = 4095;
 
-  /*! Returns the local tower ID, i.e. it strips the highest 8 bits
-   * which encode the calorimeter this tower is in
+
+  /*! Returns CaloTowerID for given CalirometerID, index 1, and index 2 of tower
    */
-  unsigned int StripCalorimeterId( const unsigned int calo_tower_id ){
+  unsigned int Encode( const CalorimeterIds calo_id , const unsigned int tower_index_1 = 0 , const unsigned int tower_index_2 = 0){
 
-    return calo_tower_id & calotowerid::kCaloIdZeroMask;
+    unsigned int calo_tower_id = 0;
 
-  }
-
-
-  /*! Returns new CaloTowerID with the highest 8 bits set to encode
-   * given calorimeter
-   */
-  unsigned int ChangeCalorimeterId( const unsigned int calo_tower_id , const CalorimeterIds calo_id ){
-
-    // shift caloID
+    // shift caloID by 24 bits
     unsigned int calo_id_shift = calo_id << calotowerid::kBitShiftCaloId;
 
-    // clear old calorimeter ID
-    unsigned int calo_tower_id_new = calo_tower_id & calotowerid::kCaloIdZeroMask;
+    // shift tower_index_1 by 12 bits
+    unsigned int tower_index_1_shift = tower_index_1 << calotowerid::kBitShiftTowerIndex1;
 
-    // set new calorimeter ID
-    calo_tower_id_new = calo_tower_id_new | calo_id_shift;
+    // shift tower_index_2 by 0 bits
+    unsigned int tower_index_2_shift = tower_index_2 << calotowerid::kBitShiftTowerIndex2;
 
-    return calo_tower_id_new;
+    // encode calorimeter ID
+    calo_tower_id = calo_tower_id | calo_id_shift;
+    calo_tower_id = calo_tower_id | tower_index_1_shift;
+    calo_tower_id = calo_tower_id | tower_index_2_shift;
+
+    return calo_tower_id;
 
   }
 
@@ -123,6 +120,10 @@ namespace calotowerid
 
     switch ( calo_id ){
 
+    case NONE:
+      return "NONE";
+      break;
+
     case CEMC:
       return "CEMC";
       break;
@@ -148,34 +149,38 @@ namespace calotowerid
       break;
 
     default:
-      return "NONE";
+      return "unknown";
 
     }
 
   }
 
 
-  /*! Returns CaloTowerID for given CalirometerID, index 1, and index 2 of tower
+  /*! Returns the local tower ID, i.e. it strips the highest 8 bits
+   * which encode the calorimeter this tower is in
    */
-  unsigned int Encode( const CalorimeterIds calo_id , const unsigned int tower_index_1 = 0 , const unsigned int tower_index_2 = 0){
+  unsigned int StripCalorimeterId( const unsigned int calo_tower_id ){
 
-    unsigned int calo_tower_id = 0;
+    return calo_tower_id & calotowerid::kCaloIdZeroMask;
 
-    // shift caloID by 24 bits
+  }
+
+
+  /*! Returns new CaloTowerID with the highest 8 bits set to encode
+   * given calorimeter
+   */
+  unsigned int ChangeCalorimeterId( const unsigned int calo_tower_id , const CalorimeterIds calo_id ){
+
+    // shift caloID
     unsigned int calo_id_shift = calo_id << calotowerid::kBitShiftCaloId;
 
-    // shift tower_index_1 by 12 bits
-    unsigned int tower_index_1_shift = tower_index_1 << calotowerid::kBitShiftTowerIndex1;
+    // clear old calorimeter ID
+    unsigned int calo_tower_id_new = calo_tower_id & calotowerid::kCaloIdZeroMask;
 
-    // shift tower_index_2 by 0 bits
-    unsigned int tower_index_2_shift = tower_index_2 << calotowerid::kBitShiftTowerIndex2;
+    // set new calorimeter ID
+    calo_tower_id_new = calo_tower_id_new | calo_id_shift;
 
-    // encode calorimeter ID
-    calo_tower_id = calo_tower_id | calo_id_shift;
-    calo_tower_id = calo_tower_id | tower_index_1_shift;
-    calo_tower_id = calo_tower_id | tower_index_2_shift;
-
-    return calo_tower_id;
+    return calo_tower_id_new;
 
   }
 
