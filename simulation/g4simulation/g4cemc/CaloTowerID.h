@@ -23,8 +23,8 @@ namespace calotowerid
     HCALOUT,
     HCALIN,
     EEMC,
-    HEMC,
-    HHCAL,
+    FEMC,
+    FHCAL,
   };
 
   /*! Bit shift left << for encoding calorimeter id
@@ -140,12 +140,12 @@ namespace calotowerid
       return "EEMC";
       break;
 
-    case HEMC:
-      return "HEMC";
+    case FEMC:
+      return "FEMC";
       break;
 
-    case HHCAL:
-      return "HHCAL";
+    case FHCAL:
+      return "FHCAL";
       break;
 
     default:
