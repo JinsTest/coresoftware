@@ -51,6 +51,8 @@ libcemc_io_la_SOURCES = \
 libcemc_la_SOURCES = \
   CaloTowerBuilderByHitIndex.cc \
   CaloTowerBuilderByHitIndex_Dict.cc \
+  CaloTowerGeomManager.cc \
+  CaloTowerGeomManager_Dict.cc \
   CrystalCalorimeterDigitization.cc \
   CrystalCalorimeterDigitization_Dict.cc \
   RawClusterBuilder.cc \
