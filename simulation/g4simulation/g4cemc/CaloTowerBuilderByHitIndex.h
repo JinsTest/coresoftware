@@ -6,6 +6,8 @@
 
 #include <phool/PHTimeServer.h>
 
+#include "CaloTowerID.h"
+
 class PHCompositeNode;
 class CaloTowerContainer;
 class PHG4HitContainer;
@@ -21,7 +23,7 @@ class CaloTowerBuilderByHitIndex : public SubsysReco {
 
 public:
 
-  CaloTowerBuilderByHitIndex(const std::string& name="CaloTowerBuilderByHitIndex");
+  CaloTowerBuilderByHitIndex( const std::string& name="CaloTowerBuilderByHitIndex" );
   virtual ~CaloTowerBuilderByHitIndex(){}
 
   int InitRun(PHCompositeNode *topNode);
@@ -32,7 +34,11 @@ public:
 
   /** Name of the detector node the G4Hits should be taken from.
    */
-  void Detector(const std::string &d) {detector_ = d;}
+  void Detector( const std::string &d , const calotowerid::CalorimeterIds calo_id )
+  {
+    detector_ = d;
+    calo_id_ = calo_id;
+  }
 
   /** Define minimum tower energy. After processing an event, towers with lower energy
    * are will be deleted.
@@ -52,6 +58,8 @@ protected:
   std::string detector_;
   std::string node_name_hits_;
   std::string node_name_towers_;
+
+  calotowerid::CalorimeterIds calo_id_;
 
   double emin_;
 
