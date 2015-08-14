@@ -36,6 +36,53 @@ bool CaloTowerGeomManager::GetPositionXYZ ( const unsigned int towerid, float &x
 
 
 //___________________________________________________________________________
+vector< unsigned int > CaloTowerGeomManager::GetNeighbors( const unsigned int tower_id )
+{
+  cout << "Look for neighbors" << endl;
+
+  vector< unsigned int > v_neighbors;
+
+  unsigned int calo_id = calotowerid::DecodeCalorimeterId( tower_id );
+
+  switch ( calo_id ){
+
+  case calotowerid::NONE:
+    return v_neighbors;
+    break;
+
+  case calotowerid::CEMC:
+    return v_neighbors;
+    break;
+
+  case calotowerid::HCALIN:
+    return v_neighbors;
+    break;
+
+  case calotowerid::HCALOUT:
+    return v_neighbors;
+    break;
+
+  case calotowerid::EEMC:
+    return GetNeighborsFwdCal( tower_id );
+    break;
+
+  case calotowerid::FEMC:
+    return GetNeighborsFwdCal( tower_id );
+    break;
+
+  case calotowerid::FHCAL:
+    return GetNeighborsFwdCal( tower_id );
+    break;
+
+  default:
+    return v_neighbors;
+
+  }
+
+}
+
+
+//___________________________________________________________________________
 bool CaloTowerGeomManager::ReadGeometryFromTable( const calotowerid::CalorimeterIds calo_id , const string mapping_tower_file ) {
 
   switch ( calo_id ){
@@ -74,6 +121,42 @@ bool CaloTowerGeomManager::ReadGeometryFromTable( const calotowerid::Calorimeter
   }
 
 }
+
+
+//___________________________________________________________________________
+vector< unsigned int > CaloTowerGeomManager::GetNeighborsFwdCal( const unsigned int tower_id )
+{
+  vector< unsigned int > v_neighbors;
+
+  unsigned int j_ctr = calotowerid::DecodeTowerIndex1( tower_id );
+  unsigned int k_ctr = calotowerid::DecodeTowerIndex2( tower_id );
+
+  /* test if towers with neighboring index1, index2 exist in this calorimeter. If yes, add their tower IDs
+   * to the output vector.
+   */
+  for ( int dj = -1; dj < 2; dj++ )  {
+    for ( int dk = -1; dk < 2; dk++ )
+      {
+	// skip central tower in grid
+	if ( dj == 0 && dk == 0 )
+	  continue;
+
+	// skip negative indices
+	if ( j_ctr + dj < 0 || k_ctr + dk < 0 )
+	  continue;
+
+	unsigned int test_id = tower_id;
+	test_id = calotowerid::UpdateTowerIndex1( test_id , j_ctr + dj );
+	test_id = calotowerid::UpdateTowerIndex2( test_id , k_ctr + dk );
+
+	float x,y,z;
+	if ( GetPositionXYZ( test_id, x, y, z ) )
+	  v_neighbors.push_back( test_id );
+      }
+  }
+
+  return v_neighbors;
+ }
 
 
 //___________________________________________________________________________
