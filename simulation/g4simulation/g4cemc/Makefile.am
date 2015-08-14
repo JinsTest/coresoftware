@@ -28,6 +28,8 @@ libcemc_io_la_SOURCES = \
   CaloTowerv1_Dict.cc \
   CaloTowerContainer.cc \
   CaloTowerContainer_Dict.cc \
+  CaloTowerGeomManager.cc \
+  CaloTowerGeomManager_Dict.cc \
   RawCluster_Dict.cc \
   RawClusterv1.cc \
   RawClusterv1_Dict.cc \
@@ -51,8 +53,6 @@ libcemc_io_la_SOURCES = \
 libcemc_la_SOURCES = \
   CaloTowerBuilderByHitIndex.cc \
   CaloTowerBuilderByHitIndex_Dict.cc \
-  CaloTowerGeomManager.cc \
-  CaloTowerGeomManager_Dict.cc \
   CrystalCalorimeterDigitization.cc \
   CrystalCalorimeterDigitization_Dict.cc \
   RawClusterBuilder.cc \
@@ -99,6 +99,7 @@ pkginclude_HEADERS = \
   CaloTower.h \
   CaloTowerv1.h \
   CaloTowerContainer.h \
+  CaloTowerGeomManager.h \
   RawCluster.h \
   RawClusterContainer.h \
   RawTower.h \
