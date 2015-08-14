@@ -47,15 +47,15 @@ namespace calotowerid
    */
   const unsigned int kCaloIdZeroMask = 16777215;
 
-  /*! binary  1111 1111 1111 1111 1111 0000 0000 0000 to
+  /*! binary  1111 1111 0000 0000 0000 1111 1111 1111 to
    * set tower index 1 to 0
    */
-  const unsigned int kTowerIndex1ZeroMask = 4294963200;
+  const unsigned int kTowerIndex1ZeroMask = 4278194175;
 
-  /*! binary  1111 1111 0000 0000 0000 1111 1111 1111 to
+  /*! binary  1111 1111 1111 1111 1111 0000 0000 0000 to
    * set tower index 2 to 0
    */
-  const unsigned int kTowerIndex2ZeroMask = 4278194175;
+  const unsigned int kTowerIndex2ZeroMask = 4294963200;
 
   /*! binary 1111 1111 0000 0000 0000 0000 0000 0000 to mask
    * everything but CaloTowerID
@@ -111,7 +111,7 @@ namespace calotowerid
     unsigned int tower_index_1_shift = tower_index_1_new << calotowerid::kBitShiftTowerIndex1;
 
     // set new tower index 1
-    tower_id_new = tower_id_new & tower_index_1_shift;
+    tower_id_new = tower_id_new | tower_index_1_shift;
 
     return tower_id_new;
   }
@@ -130,7 +130,7 @@ namespace calotowerid
     unsigned int tower_index_2_shift = tower_index_2_new << calotowerid::kBitShiftTowerIndex2;
 
     // set new tower index 2
-    tower_id_new = tower_id_new & tower_index_2_shift;
+    tower_id_new = tower_id_new | tower_index_2_shift;
 
     return tower_id_new;
   }
