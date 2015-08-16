@@ -14,9 +14,15 @@
 #include "CaloTowerID.h"
 
 struct position {
+  // position
   float x;
   float y;
   float z;
+
+  // dimension
+  float dx;
+  float dy;
+  float dz;
 };
 
 /** \brief Singleton giving access to CaloTower geometry information like position of tower center.
@@ -39,6 +45,17 @@ public:
 
   ///! Return cartesian position of tower center
   bool GetPositionXYZ ( const unsigned int, float &, float &, float &);
+
+  ///! Return cartesian dimension of tower center
+  bool GetSizeXYZ ( const unsigned int, float &, float &, float &);
+
+  ///! Return eta-phi position of tower center
+  bool GetPositionEtaPhiR ( const unsigned int, float &, float &, float &)
+  { return false; }
+
+  ///! Return eta-phi dimension of tower center
+  bool GetSizeEtaPhiR ( const unsigned int, float &, float &, float &)
+  { return false; }
 
   ///! Return vector of neighboring towers
   std::vector< unsigned int > GetNeighbors( const unsigned int );

@@ -36,10 +36,30 @@ bool CaloTowerGeomManager::GetPositionXYZ ( const unsigned int towerid, float &x
 
 
 //___________________________________________________________________________
+bool CaloTowerGeomManager::GetSizeXYZ ( const unsigned int towerid, float &dx, float &dy, float &dz) {
+
+  dx = dy = dz = 0;
+
+  std::map< unsigned int, position >::iterator map_it;
+
+  map_it = _map_towers.find( towerid );
+  if ( map_it != _map_towers.end() )
+    {
+      dx = map_it->second.dx;
+      dy = map_it->second.dy;
+      dz = map_it->second.dz;
+
+      return true;
+    }
+
+  return false;
+
+}
+
+
+//___________________________________________________________________________
 vector< unsigned int > CaloTowerGeomManager::GetNeighbors( const unsigned int tower_id )
 {
-  cout << "Look for neighbors" << endl;
-
   vector< unsigned int > v_neighbors;
 
   unsigned int calo_id = calotowerid::DecodeCalorimeterId( tower_id );
@@ -182,7 +202,7 @@ bool CaloTowerGeomManager::ReadGeometryFromTableFwdCal( const calotowerid::Calor
     {
 
       unsigned idx_j, idx_k, idx_l;
-      float pos_x, pos_y, pos_z;
+      float pos_x, pos_y, pos_z, size_x, size_y, size_z;
       float dummy;
 
       istringstream iss(line_mapping);
@@ -194,7 +214,7 @@ bool CaloTowerGeomManager::ReadGeometryFromTableFwdCal( const calotowerid::Calor
 	}
 
       /* read string- break if error */
-      if ( !( iss >> idx_j >> idx_k >> idx_l >> pos_x >> pos_y >> pos_z >> dummy >> dummy >> dummy >> dummy ) )
+      if ( !( iss >> idx_j >> idx_k >> idx_l >> pos_x >> pos_y >> pos_z >> size_x >> size_y >> size_z >> dummy ) )
 	{
 	  cerr << "CaloTowerGeomManager::ReadGeometryFromTable - ERROR Failed to read line in mapping file " << mapping_tower_file << endl;
 	  exit(1);
@@ -205,7 +225,7 @@ bool CaloTowerGeomManager::ReadGeometryFromTableFwdCal( const calotowerid::Calor
 
       /* Position */
       pos_z += 415;
-      position temp_pos { pos_x, pos_y, pos_z };
+      position temp_pos { pos_x, pos_y, pos_z, size_x, size_y, size_z };
 
       /* Insert this tower into position map */
       _map_towers.insert( pair< unsigned int , position >( temp_id , temp_pos ) );
