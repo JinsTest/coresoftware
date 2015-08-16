@@ -202,7 +202,7 @@ bool CaloTowerGeomManager::ReadGeometryFromTableFwdCal( const calotowerid::Calor
     {
 
       unsigned idx_j, idx_k, idx_l;
-      float pos_x, pos_y, pos_z, size_x, size_y, size_z;
+      float pos_x, pos_y, pos_z, size_x, size_y, size_z, alpha, beta, gamma;
       float dummy;
 
       istringstream iss(line_mapping);
@@ -214,7 +214,7 @@ bool CaloTowerGeomManager::ReadGeometryFromTableFwdCal( const calotowerid::Calor
 	}
 
       /* read string- break if error */
-      if ( !( iss >> idx_j >> idx_k >> idx_l >> pos_x >> pos_y >> pos_z >> size_x >> size_y >> size_z >> dummy ) )
+      if ( !( iss >> idx_j >> idx_k >> idx_l >> pos_x >> pos_y >> pos_z >> size_x >> size_y >> size_z >> alpha >> beta >> gamma >> dummy ) )
 	{
 	  cerr << "CaloTowerGeomManager::ReadGeometryFromTable - ERROR Failed to read line in mapping file " << mapping_tower_file << endl;
 	  exit(1);
@@ -225,7 +225,7 @@ bool CaloTowerGeomManager::ReadGeometryFromTableFwdCal( const calotowerid::Calor
 
       /* Position */
       pos_z += 415;
-      position temp_pos { pos_x, pos_y, pos_z, size_x, size_y, size_z };
+      position temp_pos { pos_x, pos_y, pos_z, size_x, size_y, size_z, alpha, beta, gamma };
 
       /* Insert this tower into position map */
       _map_towers.insert( pair< unsigned int , position >( temp_id , temp_pos ) );

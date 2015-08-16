@@ -23,6 +23,11 @@ struct position {
   float dx;
   float dy;
   float dz;
+
+  // angle
+  float alpha;
+  float beta;
+  float gamma;
 };
 
 /** \brief Singleton giving access to CaloTower geometry information like position of tower center.
