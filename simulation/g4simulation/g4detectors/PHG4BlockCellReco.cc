@@ -14,7 +14,7 @@
 #include <phool/PHNodeIterator.h>
 #include <phool/PHCompositeNode.h>
 #include <phool/PHIODataNode.h>
-#include <fun4all/getClass.h>
+#include <phool/getClass.h>
 
 #include<TROOT.h>
 
@@ -22,6 +22,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <sstream>
+#include <limits>       // std::numeric_limits
 
 using namespace std;
 
@@ -33,7 +34,10 @@ static vector<PHG4CylinderCell*> cellptarray;
 PHG4BlockCellReco::PHG4BlockCellReco(const string &name) :
   SubsysReco(name),
   _timer(PHTimeServer::get()->insert_new("PHG4BlockCellReco")),
-  chkenergyconservation(0)
+  chkenergyconservation(0),
+  tmin_default(0.0),  // ns
+  tmax_default(60.0), // ns
+  tmin_max()
 {
   memset(nbins, 0, sizeof(nbins));
 }
@@ -62,10 +66,20 @@ int PHG4BlockCellReco::InitRun(PHCompositeNode *topNode)
   cellnodename = "G4CELL_" + detector;
   PHG4CylinderCellContainer *cells = findNode::getClass<PHG4CylinderCellContainer>(topNode , cellnodename);
   if (!cells)
-  {
+    {
+      PHNodeIterator dstiter(dstNode);
+      PHCompositeNode *DetNode =
+          dynamic_cast<PHCompositeNode*>(dstiter.findFirst("PHCompositeNode",
+              detector));
+      if (!DetNode)
+        {
+          DetNode = new PHCompositeNode(detector);
+          dstNode->addNode(DetNode);
+        }
+
     cells = new PHG4CylinderCellContainer();
     PHIODataNode<PHObject> *newNode = new PHIODataNode<PHObject>(cells, cellnodename.c_str() , "PHObject");
-    dstNode->addNode(newNode);
+    DetNode->addNode(newNode);
   }
 
   geonodename = "BLOCKGEOM_" + detector;
@@ -191,6 +205,14 @@ int PHG4BlockCellReco::InitRun(PHCompositeNode *topNode)
       layerseggeo->identify();
     }
   }
+
+  for (std::map<int,int>::iterator iter = binning.begin(); 
+       iter != binning.end(); ++iter) {
+    int layer = iter->first;
+    // if the user doesn't set an integration window, set the default
+    tmin_max.insert(std::make_pair(layer,std::make_pair(tmin_default,tmax_default)));    
+  }
+  
   return Fun4AllReturnCodes::EVENT_OK;
 }
 
@@ -261,6 +283,10 @@ PHG4BlockCellReco::process_event(PHCompositeNode *topNode)
     {
       for (hiter = hit_begin_end.first; hiter != hit_begin_end.second; hiter++)
       {
+	// checking ADC timing integration window cut
+	if (hiter->second->get_t(0)>tmin_max[*layer].second) continue;
+	if (hiter->second->get_t(1)<tmin_max[*layer].first) continue;	      
+
         pair<double, double> etax[2];
         double xbin[2];
         double etabin[2];
@@ -387,7 +413,9 @@ PHG4BlockCellReco::process_event(PHCompositeNode *topNode)
             cellptarray[ibin]->set_phibin(ixbin);
             cellptarray[ibin]->set_etabin(ietabin);
           }
-          cellptarray[ibin]->add_edep(hiter->first, hiter->second->get_edep()*vdedx[i1]);
+          cellptarray[ibin]->add_edep(hiter->first, hiter->second->get_edep()*vdedx[i1], hiter->second->get_light_yield()*vdedx[i1]);
+          cellptarray[ibin]->add_shower_edep(hiter->second->get_shower_id(), hiter->second->get_edep()*vdedx[i1]);
+
           // just a sanity check - we don't want to mess up by having Nan's or Infs in our energy deposition
           if (! isfinite(hiter->second->get_edep()*vdedx[i1]))
           {

@@ -57,7 +57,7 @@ public:
   bool  has_property(Jet::PROPERTY prop_id) const;
   float get_property(Jet::PROPERTY prop_id) const;
   void  set_property(Jet::PROPERTY prop_id, float value);
-  void  print_property(ostream& os) const;
+  void  print_property(std::ostream& os) const;
   
   //
   // clustered component methods (multimap interface based)
@@ -70,8 +70,8 @@ public:
   void      clear_comp()                                {_comp_ids.clear();}
   void      insert_comp(SRC source,unsigned int compid) {_comp_ids.insert(std::make_pair(source,compid));}
   size_t    erase_comp(SRC source)                      {return _comp_ids.erase(source);}
-  void      erase_comp(Iter iter)                       {return _comp_ids.erase(iter);}
-  void      erase_comp(Iter first, Iter last)           {return _comp_ids.erase(first,last);}
+  void      erase_comp(Iter iter)                       {_comp_ids.erase(iter); return;}
+  void      erase_comp(Iter first, Iter last)           {_comp_ids.erase(first,last); return;}
 
   ConstIter begin_comp() const                 {return _comp_ids.begin();}
   ConstIter lower_bound_comp(SRC source) const {return _comp_ids.lower_bound(source);}

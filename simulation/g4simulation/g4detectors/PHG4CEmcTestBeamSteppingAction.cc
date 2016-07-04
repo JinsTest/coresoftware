@@ -4,10 +4,10 @@
 #include <g4main/PHG4HitContainer.h>
 #include <g4main/PHG4Hit.h>
 #include <g4main/PHG4Hitv1.h>
-
+#include <g4main/PHG4Shower.h>
 #include <g4main/PHG4TrackUserInfoV1.h>
 
-#include <fun4all/getClass.h>
+#include <phool/getClass.h>
 
 #include <Geant4/G4Step.hh>
 #include <Geant4/G4SystemOfUnits.hh>
@@ -17,7 +17,6 @@
 using namespace std;
 //____________________________________________________________________________..
 PHG4CEmcTestBeamSteppingAction::PHG4CEmcTestBeamSteppingAction( PHG4CEmcTestBeamDetector* detector ):
-  PHG4SteppingAction(NULL),
   detector_( detector ),
   hits_(NULL),
   absorberhits_(NULL),
@@ -86,29 +85,38 @@ bool PHG4CEmcTestBeamSteppingAction::UserSteppingAction( const G4Step* aStep, bo
 	  hit->set_t( 0, prePoint->GetGlobalTime() / nanosecond );
 	  //set the track ID
 	  {
-	    int trkoffset = 0;
-	    if ( G4VUserTrackInformation* p = aTrack->GetUserInformation() )
+            hit->set_trkid(aTrack->GetTrackID());
+            if ( G4VUserTrackInformation* p = aTrack->GetUserInformation() )
 	      {
 		if ( PHG4TrackUserInfoV1* pp = dynamic_cast<PHG4TrackUserInfoV1*>(p) )
 		  {
-		    trkoffset = pp->GetTrackIdOffset();
+		    hit->set_trkid(pp->GetUserTrackId());
+		    hit->set_shower_id(pp->GetShower()->get_id());
 		  }
 	      }
-	    hit->set_trkid(aTrack->GetTrackID() + trkoffset);
 	  }
 
 	  //set the initial energy deposit
 	  hit->set_edep(0);
 	  hit->set_eion(0); // only implemented for v5 otherwise empty
-
+          PHG4HitContainer *hitcontainer;
+	  // here we do things which are different between scintillator and absorber hits
 	  if (whichactive > 0) // return of isinCEmcTestDetector, > 0 hit in scintillator, < 0 hit in absorber
 	    {
-	      // Now add the hit
-	      hits_->AddHit(tower_id, hit);
+              hitcontainer = hits_;
 	    }
 	  else
 	    {
-	      absorberhits_->AddHit(tower_id, hit);
+	      hitcontainer = absorberhits_;
+	    }
+	  // here we set what is common for scintillator and absorber hits
+	  hitcontainer->AddHit(tower_id, hit);
+	  if ( G4VUserTrackInformation* p = aTrack->GetUserInformation() )
+	    {
+	      if ( PHG4TrackUserInfoV1* pp = dynamic_cast<PHG4TrackUserInfoV1*>(p) )
+		{
+		  pp->GetShower()->add_g4hit_id(hitcontainer->GetID(),hit->get_hit_id());
+		}
 	    }
 	  break;
 	default:

@@ -6,9 +6,10 @@
 #pragma link C++ class Fun4AllHistoManager-!;
 #pragma link C++ class Fun4AllInputManager-!;
 #pragma link C++ class Fun4AllNoSyncDstInputManager-!;
+#pragma link C++ class Fun4AllPrdfInputManager-!;
+#pragma link C++ class Fun4AllPrdfOutputManager-!;
 #pragma link C++ class Fun4AllOutputManager-!;
 #pragma link C++ class Fun4AllServer-!;
 #pragma link C++ class Fun4AllSyncManager-!;
-#pragma link C++ class recoConsts-!;
 
 #endif /* __CINT__ */

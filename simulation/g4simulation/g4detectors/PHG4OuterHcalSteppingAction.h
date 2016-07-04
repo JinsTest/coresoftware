@@ -1,11 +1,13 @@
 #ifndef PHG4VOuterHcalSteppingAction_h
 #define PHG4VOuterHcalSteppingAction_h
 
-#include "g4main/PHG4SteppingAction.h"
+#include <g4main/PHG4SteppingAction.h>
 
 class PHG4OuterHcalDetector;
+class PHG4Parameters;
 class PHG4Hit;
 class PHG4HitContainer;
+class PHG4Shower;
 
 class PHG4OuterHcalSteppingAction : public PHG4SteppingAction
 {
@@ -13,36 +15,30 @@ class PHG4OuterHcalSteppingAction : public PHG4SteppingAction
   public:
 
   //! constructor
-  PHG4OuterHcalSteppingAction( PHG4OuterHcalDetector* );
+  PHG4OuterHcalSteppingAction( PHG4OuterHcalDetector* , const PHG4Parameters *parameters);
 
-  //! destroctor
+  //! destructor
   virtual ~PHG4OuterHcalSteppingAction()
   {}
 
   //! stepping action
   virtual bool UserSteppingAction(const G4Step*, bool);
 
+  virtual int Init();
+
   //! reimplemented from base class
   virtual void SetInterfacePointers( PHCompositeNode* );
 
-  float GetLightCorrection(float r);
-  void SetLightCorrection(float inner_radius, float inner_corr,
-			  float outer_radius, float outer_corr) {
-    light_balance_ = true;
-    light_balance_inner_radius_ = inner_radius;
-    light_balance_inner_corr_ = inner_corr;
-    light_balance_outer_radius_ = outer_radius;
-    light_balance_outer_corr_ = outer_corr;
-  }
+  double GetLightCorrection(const double r) const;
 
-  void SetLightScintModel(const bool b = true)
-  {
-    light_scint_model_ = b;
-  }
-  
   void FieldChecker (const G4Step*);
+  void EnableFieldChecker(const int i=1) {enable_field_checker = i;}
+
+  void flush_cached_values();
 
   private:
+
+  void save_previous_g4hit();
 
   //! pointer to the detector
   PHG4OuterHcalDetector* detector_;
@@ -51,14 +47,25 @@ class PHG4OuterHcalSteppingAction : public PHG4SteppingAction
   PHG4HitContainer * hits_;
   PHG4HitContainer * absorberhits_;
   PHG4Hit *hit;
+  const PHG4Parameters *params;
+  PHG4HitContainer *savehitcontainer;
+  PHG4Shower *saveshower;
 
-  bool  enable_field_checker_;
-  bool  light_scint_model_;
-  bool  light_balance_;
-  float light_balance_inner_radius_;
-  float light_balance_inner_corr_;
-  float light_balance_outer_radius_;
-  float light_balance_outer_corr_;
+  int save_layer_id;
+  int enable_field_checker;
+
+  // since getting parameters is a map search we do not want to
+  // do this in every step, the parameters used are cached
+  // in the following variables
+  int absorbertruth;
+  int IsActive;
+  int IsBlackHole;
+  int light_scint_model;
+  
+  double light_balance_inner_corr;
+  double light_balance_inner_radius;
+  double light_balance_outer_corr;
+  double light_balance_outer_radius;
 };
 
 

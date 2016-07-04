@@ -1,15 +1,19 @@
 #include "PHG4HitContainer.h"
 #include "PHG4Hit.h"
 #include "PHG4Hitv1.h"
-#include "PHG4HitDefs.h"
 
 #include <phool/phool.h>
-
 #include <cstdlib>
 
 using namespace std;
 
 PHG4HitContainer::PHG4HitContainer()
+  : id(-1), hitmap(), layers()
+{
+}
+
+PHG4HitContainer::PHG4HitContainer(std::string nodename)
+  : id(PHG4HitDefs::get_volume_id(nodename)), hitmap(), layers()
 {
 }
 
@@ -102,7 +106,7 @@ PHG4HitContainer::AddHit(PHG4Hit *newhit)
   PHG4HitDefs::keytype key = newhit->get_hit_id();
   if (hitmap.find(key) != hitmap.end())
     {
-      cout << "hit with id  0x" << hex << key << " exists already" << endl;
+      cout << "hit with id  0x" << hex << key << dec << " exists already" << endl;
       return hitmap.find(key);
     }
   PHG4HitDefs::keytype detidlong = key >>  PHG4HitDefs::hit_idbits;

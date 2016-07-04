@@ -4,10 +4,11 @@
 #include <g4main/PHG4HitContainer.h>
 #include <g4main/PHG4Hit.h>
 #include <g4main/PHG4Hitv1.h>
+#include <g4main/PHG4Shower.h>
 
 #include <g4main/PHG4TrackUserInfoV1.h>
 
-#include <fun4all/getClass.h>
+#include <phool/getClass.h>
 
 #include <Geant4/G4Step.hh>
 
@@ -31,7 +32,6 @@
 using namespace std;
 //____________________________________________________________________________..
 PHG4SiliconTrackerSteppingAction::PHG4SiliconTrackerSteppingAction( PHG4SiliconTrackerDetector* detector ):
-  PHG4SteppingAction(NULL),
   detector_( detector ),
   hits_(NULL),
   absorberhits_(NULL),
@@ -189,15 +189,15 @@ bool PHG4SiliconTrackerSteppingAction::UserSteppingAction( const G4Step* aStep, 
 	  hit->set_t( 0, prePoint->GetGlobalTime() / nanosecond );
 	  //set the track ID
 	  {
-	    int trkoffset = 0;
-	    if ( G4VUserTrackInformation* p = aTrack->GetUserInformation() )
+            hit->set_trkid(aTrack->GetTrackID());
+            if ( G4VUserTrackInformation* p = aTrack->GetUserInformation() )
 	      {
 		if ( PHG4TrackUserInfoV1* pp = dynamic_cast<PHG4TrackUserInfoV1*>(p) )
 		  {
-		    trkoffset = pp->GetTrackIdOffset();
+		    hit->set_trkid(pp->GetUserTrackId());
+		    hit->set_shower_id(pp->GetShower()->get_id());
 		  }
 	      }
-	    hit->set_trkid(aTrack->GetTrackID() + trkoffset);
 	  }
 	  //set the initial energy deposit
 	  hit->set_edep(0);
@@ -205,6 +205,16 @@ bool PHG4SiliconTrackerSteppingAction::UserSteppingAction( const G4Step* aStep, 
 	  // Now add the hit
 	  //	  hit->print();
 	  hits_->AddHit(layer_id, hit);
+	  
+	  {
+	    if ( G4VUserTrackInformation* p = aTrack->GetUserInformation() )
+	      {
+		if ( PHG4TrackUserInfoV1* pp = dynamic_cast<PHG4TrackUserInfoV1*>(p) )
+		  {
+		    pp->GetShower()->add_g4hit_id(hits_->GetID(),hit->get_hit_id());
+		  }
+	      }
+	  }
 	  
 	  break;
 	default:

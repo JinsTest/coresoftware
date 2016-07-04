@@ -1,5 +1,3 @@
-// $$Id: PHG4SpacalDetector.cc,v 1.7 2015/02/10 15:39:26 pinkenbu Exp $$
-
 /*!
  * \file ${file_name}
  * \brief
@@ -9,14 +7,13 @@
  */
 #include "PHG4SpacalDetector.h"
 #include "PHG4CylinderGeomContainer.h"
-#include "PHG4CylinderGeom_Spacalv1.h"
 
 #include <g4main/PHG4PhenixDetector.h>
 #include <g4main/PHG4Utils.h>
 
 #include <phool/PHCompositeNode.h>
 #include <phool/PHIODataNode.h>
-#include <fun4all/getClass.h>
+#include <phool/getClass.h>
 
 #include <Geant4/G4Box.hh>
 #include <Geant4/G4Colour.hh>
@@ -37,6 +34,7 @@
 #include <cassert>
 #include <cmath>
 #include <sstream>
+#include <boost/foreach.hpp>
 
 using namespace std;
 
@@ -88,11 +86,11 @@ PHG4SpacalDetector::IsInCylinderActive(const G4VPhysicalVolume * volume)
       if (fiber_vol.find(volume) != fiber_vol.end())
         return FIBER_CLADING;
 
-      if (calo_vol.find(volume) != calo_vol.end())
-        return ABSORBER;
-
       if (block_vol.find(volume) != block_vol.end())
         return ABSORBER;
+
+      if (calo_vol.find(volume) != calo_vol.end())
+        return SUPPORT;
 
     }
   return INACTIVE;
@@ -143,38 +141,14 @@ PHG4SpacalDetector::Construct(G4LogicalVolume* logicWorld)
       logicWorld, false, 0, overlapcheck);
 
 
+  // install sectors
   std::pair<G4LogicalVolume *,G4Transform3D> psec = Construct_AzimuthalSeg();
   G4LogicalVolume *sec_logic = psec.first;
   const G4Transform3D & sec_trans = psec.second;
-
-//  int n_sec_construct =
-//      (_geom->is_virualize_fiber()) ? 1 : (_geom->is_azimuthal_seg_visible()?2:_geom->get_azimuthal_n_sec());
-  int n_sec_construct =
-      (_geom->is_virualize_fiber()) ? 1 : (_geom->get_azimuthal_n_sec());
-
-  if (_geom->is_virualize_fiber() or _geom->is_azimuthal_seg_visible())
+  BOOST_FOREACH(const SpacalGeom_t::sector_map_t::value_type& val, _geom->get_sector_map())
     {
-
-      cout
-          << "PHG4SpacalDetector::Construct - WARNING - "
-          <<"only construct "<<n_sec_construct<<" sectors for visualization purpose!!!"
-          << endl;
-
-    }
-  else
-    {
-      cout
-          << "PHG4SpacalDetector::Construct - INFO - "
-          <<"start construction of "<<n_sec_construct<<" sectors."
-          << endl;
-
-    }
-
-  for (int sec = 0; sec < n_sec_construct; ++sec)
-    {
-
-      const double rot = twopi / (double) (_geom->get_azimuthal_n_sec())
-          * ((double) (sec) - n_sec_construct/2);
+      const int sec = val.first;
+      const double rot = val.second;
 
       G4Transform3D sec_place = G4RotateZ3D(rot) * sec_trans;
 
@@ -187,7 +161,7 @@ PHG4SpacalDetector::Construct(G4LogicalVolume* logicWorld)
       calo_vol[calo_phys] = sec;
 
     }
-  _geom->set_nscint(_geom->get_nscint() * n_sec_construct);
+  _geom->set_nscint(_geom->get_nscint() *  _geom->get_sector_map().size());
 
   if (active)
     {
@@ -252,7 +226,7 @@ PHG4SpacalDetector::Construct(G4LogicalVolume* logicWorld)
       //    geo->identify();
     }
 
-  if (_geom->get_construction_verbose() >= 1)
+  if ((verbosity > 0) && (_geom->get_construction_verbose() >= 1))
     {
       cout << "PHG4SpacalDetector::Construct::" << GetName()
           << " - Completed. Print Geometry:" << endl;
@@ -312,18 +286,20 @@ PHG4SpacalDetector::Construct_AzimuthalSeg()
     }
   _geom->set_nscint(fiber_count);
 
-  cout << "PHG4SpacalDetector::Construct_AzimuthalSeg::" << GetName()
-      << " - constructed " << fiber_count << " fibers" << endl;
-  cout << "\t" << "_geom->get_fiber_distance() = " << _geom->get_fiber_distance()
-      << endl;
-  cout << "\t" << "fiber_length = " << fiber_length / cm << endl;
-  cout << "\t" << "z_step = " << z_step << endl;
-  cout << "\t" << "_geom->get_azimuthal_bin() = " << _geom->get_azimuthal_n_sec()
-      << endl;
-  cout << "\t" << "_geom->get_azimuthal_distance() = "
-      << _geom->get_azimuthal_distance() << endl;
-  cout << "\t" << "_geom->is_virualize_fiber() = " << _geom->is_virualize_fiber()
-      << endl;
+  if (verbosity > 0) {
+    cout << "PHG4SpacalDetector::Construct_AzimuthalSeg::" << GetName()
+	 << " - constructed " << fiber_count << " fibers" << endl;
+    cout << "\t" << "_geom->get_fiber_distance() = " << _geom->get_fiber_distance()
+	 << endl;
+    cout << "\t" << "fiber_length = " << fiber_length / cm << endl;
+    cout << "\t" << "z_step = " << z_step << endl;
+    cout << "\t" << "_geom->get_azimuthal_bin() = " << _geom->get_azimuthal_n_sec()
+	 << endl;
+    cout << "\t" << "_geom->get_azimuthal_distance() = "
+	 << _geom->get_azimuthal_distance() << endl;
+    cout << "\t" << "_geom->is_virualize_fiber() = " << _geom->is_virualize_fiber()
+	 << endl;
+  }
 
   return make_pair(sec_logic,G4Transform3D::Identity);
 }
@@ -383,6 +359,7 @@ PHG4SpacalDetector::Construct_Fiber(const G4double length, const string & id)
 void
 PHG4SpacalDetector::Print(const std::string &what) const
 {
+
   cout << "PHG4SpacalDetector::Print::" << GetName() << " - Print Geometry:"
       << endl;
   _geom->Print();

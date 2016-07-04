@@ -21,6 +21,8 @@ public:
     CEMC_TOWER=3, CEMC_CLUSTER=4,
     HCALIN_TOWER=5, HCALIN_CLUSTER=6,
     HCALOUT_TOWER=7, HCALOUT_CLUSTER=8,
+    FEMC_TOWER=9, FEMC_CLUSTER=10,
+    FHCAL_TOWER=11, FHCAL_CLUSTER=12,
   };
 
   enum PROPERTY {prop_JetCharge = 1,prop_BFrac = 2};
@@ -62,7 +64,7 @@ public:
   virtual bool  has_property(Jet::PROPERTY prop_id) const {return false;}
   virtual float get_property(Jet::PROPERTY prop_id) const {return NAN;}
   virtual void  set_property(Jet::PROPERTY prop_id, float value) {return;}
-  virtual void  print_property(ostream& os) const {return;}
+  virtual void  print_property(std::ostream& os) const {return;}
 
   // component id storage ------------------------------------------------------
   

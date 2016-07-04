@@ -3,10 +3,14 @@
 #define __SVTXCLUSTEREVAL_H__
 
 #include "SvtxHitEval.h"
+#include "SvtxTruthEval.h"
 
 #include <phool/PHCompositeNode.h>
+#include <g4hough/SvtxClusterMap.h>
 #include <g4hough/SvtxCluster.h>
+#include <g4hough/SvtxHitMap.h>
 #include <g4main/PHG4Hit.h>
+#include <g4main/PHG4TruthInfoContainer.h>
 #include <g4main/PHG4Particle.h>
 
 #include <set>
@@ -17,13 +21,25 @@ class SvtxClusterEval {
 public:
 
   SvtxClusterEval(PHCompositeNode *topNode);
-  virtual ~SvtxClusterEval() {}
+  virtual ~SvtxClusterEval();
 
   void next_event(PHCompositeNode *topNode);
-  void do_caching(bool do_cache) {_do_cache = do_cache;}
+  void do_caching(bool do_cache) {
+    _do_cache = do_cache;
+    _hiteval.do_caching(do_cache);
+  }
+  void set_strict(bool strict) {
+    _strict = strict;
+    _hiteval.set_strict(strict);
+  }
+  void set_verbosity(int verbosity) {
+    _verbosity = verbosity;
+    _hiteval.set_verbosity(verbosity);
+  }
   
   // access the clustereval (and its cached values)
   SvtxHitEval* get_hit_eval() {return &_hiteval;}
+  SvtxTruthEval* get_truth_eval() {return _hiteval.get_truth_eval();}
   
   // backtrace through to PHG4Hits
   std::set<PHG4Hit*> all_truth_hits          (SvtxCluster* cluster);
@@ -41,11 +57,23 @@ public:
   // overlap calculations
   float get_energy_contribution (SvtxCluster* svtxcluster, PHG4Particle* truthparticle);
   float get_energy_contribution (SvtxCluster* svtxcluster, PHG4Hit* truthhit);
+
+  unsigned int get_errors() {return _errors + _hiteval.get_errors();}
   
 private:
-  PHCompositeNode* _topNode;
-  SvtxHitEval _hiteval;
 
+  void get_node_pointers(PHCompositeNode* topNode);
+  bool has_node_pointers();
+  
+  SvtxHitEval _hiteval;
+  SvtxClusterMap* _clustermap;
+  SvtxHitMap* _hitmap;
+  PHG4TruthInfoContainer* _truthinfo;
+
+  bool _strict;
+  int _verbosity;
+  unsigned int _errors;
+  
   bool                                                  _do_cache;
   std::map<SvtxCluster*,std::set<PHG4Hit*> >            _cache_all_truth_hits;
   std::map<SvtxCluster*,PHG4Hit*>                       _cache_max_truth_hit_by_energy;

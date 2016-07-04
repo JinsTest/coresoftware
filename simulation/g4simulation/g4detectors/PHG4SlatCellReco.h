@@ -33,6 +33,15 @@ class PHG4SlatCellReco : public SubsysReco
   void etasize_nslat(const int i, const double deltaeta, const int nslat);
   void checkenergy(const int i=1) {chkenergyconservation = i;}
 
+  double get_timing_window_min(const int i) {return tmin_max[i].first;}
+  double get_timing_window_max(const int i) {return tmin_max[i].second;}
+  void   set_timing_window(const int i, const double tmin, const double tmax) {
+    tmin_max[i] = std::make_pair(tmin,tmax);
+  }
+  void   set_timing_window_defaults(const double tmin, const double tmax) {
+    tmin_default = tmin; tmax_default = tmax;
+  }
+
  protected:
   void set_size(const int i, const double sizeA, const int sizeB, const int what);
   int CheckEnergy(PHCompositeNode *topNode);
@@ -54,6 +63,11 @@ class PHG4SlatCellReco : public SubsysReco
   int nbins[2];
   int nslatscombined;
   int chkenergyconservation;
+
+  double tmin_default;
+  double tmax_default;
+  std::map<int, std::pair<double,double> > tmin_max;
+
 };
 
 #endif

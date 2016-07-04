@@ -4,10 +4,10 @@
 #include <g4main/PHG4HitContainer.h>
 #include <g4main/PHG4Hit.h>
 #include <g4main/PHG4Hitv1.h>
-
+#include <g4main/PHG4Shower.h>
 #include <g4main/PHG4TrackUserInfoV1.h>
 
-#include <fun4all/getClass.h>
+#include <phool/getClass.h>
 
 #include <Geant4/G4Step.hh>
 
@@ -60,17 +60,16 @@ bool PHG4ConeSteppingAction::UserSteppingAction( const G4Step* aStep, bool )
           hit->set_z( 0, prePoint->GetPosition().z() / cm );
 	  // time in ns
           hit->set_t( 0, prePoint->GetGlobalTime() / nanosecond );
-          //set the track ID
+ 	  //set the track ID
 	  {
-	    int trkoffset = 0;
-	    if ( G4VUserTrackInformation* p = aTrack->GetUserInformation() )
+            hit->set_trkid(aTrack->GetTrackID());
+            if ( G4VUserTrackInformation* p = aTrack->GetUserInformation() )
 	      {
 		if ( PHG4TrackUserInfoV1* pp = dynamic_cast<PHG4TrackUserInfoV1*>(p) )
 		  {
-		    trkoffset = pp->GetTrackIdOffset();
+		    hit->set_trkid(pp->GetUserTrackId());
 		  }
 	      }
-	    hit->set_trkid(aTrack->GetTrackID() + trkoffset);
 	  }
 
           //set the initial energy deposit
@@ -79,6 +78,16 @@ bool PHG4ConeSteppingAction::UserSteppingAction( const G4Step* aStep, bool )
           // Now add the hit
           hits_->AddHit(layer_id, hit);
 
+	  {
+	    if ( G4VUserTrackInformation* p = aTrack->GetUserInformation() )
+	      {
+		if ( PHG4TrackUserInfoV1* pp = dynamic_cast<PHG4TrackUserInfoV1*>(p) )
+		  {
+		    pp->GetShower()->add_g4hit_id(hits_->GetID(),hit->get_hit_id());
+		  }
+	      }
+	  }
+	  
           break;
         default:
           break;

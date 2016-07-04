@@ -8,7 +8,13 @@
 #include "rcdaqEventiterator.h"
 #include <stdio.h>
 #include <iostream>
-#include "oncsEvent.h"
+#include <stdlib.h>
+
+#include "oncsBuffer.h"
+#include "gzbuffer.h"
+#include "lzobuffer.h"
+#include "Event.h"
+
 #include <stddef.h>
 #include <string.h>
 #include <sys/types.h>
@@ -16,13 +22,14 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+
+#include <netdb.h>
 #include <netinet/in.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 
 
 using namespace std;
-
 
 
 // there are two similar constructors, one with just the
@@ -37,6 +44,19 @@ rcdaqEventiterator::~rcdaqEventiterator()
 }  
 
 
+rcdaqEventiterator::rcdaqEventiterator()
+{
+  string host = "localhost";
+    
+  if ( getenv("RCDAQHOST")  )
+    {
+      host = getenv("RCDAQHOST");
+    }
+
+  int status;
+  setup (host.c_str(), status);
+}  
+
 rcdaqEventiterator::rcdaqEventiterator(const char *ip)
 {
   int status;
@@ -49,45 +69,51 @@ rcdaqEventiterator::rcdaqEventiterator(const char *ip, int &status)
 }  
 
 
-
 int rcdaqEventiterator::setup(const char *ip, int &status)
 {
-  _sockfd  = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+  _defunct = 0;
+
+  
+  struct hostent *p_host;
+  p_host = gethostbyname(ip);
+  
+  //  std::cout << __FILE__ << " " << __LINE__ << "  " << ip << "  " << p_host->h_name << "  " << p_host->h_addr << std::endl;
+
+  
+  if ( ! p_host ) 
+    {
+      status = -2;
+      _defunct = 1;
+      return -2;
+    }
+
+  //  std::cout << p_host->h_name << "  " << p_host->h_addr << std::endl;
+
   bptr = 0;
   bp = 0;
   allocatedsize = 0;
-  if (_sockfd >0 ) 
-    {
-      _theIP = ip;
-      status = 0;
-      last_read_status = 0;
-      current_index = 0;
-    }
-  else
-    {
-      status = 1;
-      last_read_status = 1;
-    }
+  _theIP = p_host->h_name;
+  status = 0;
+  last_read_status = 0;
+  current_index = 0;
 
   memset((char *) &server, 0, sizeof(server));
   server.sin_family = AF_INET;
-  if (inet_aton(_theIP.c_str(), &server.sin_addr)==0) 
-    {
-      fprintf(stderr, "inet_aton() failed\n");
-    }
-
+  bcopy(p_host->h_addr, &(server.sin_addr.s_addr), p_host->h_length);
   server.sin_port = htons(MONITORINGPORT);
+
   return 0;
 }  
 
-void  
-rcdaqEventiterator::identify (OSTREAM &os) const
+void rcdaqEventiterator::identify (OSTREAM &os) const
 { 
-  os << getIdTag() << std::endl;
+  os << getIdTag();
+  if ( _defunct ) os << " *** defunct";
+  os << std::endl;
 
 };
 
-char * rcdaqEventiterator::getIdTag () const
+const char * rcdaqEventiterator::getIdTag () const
 { 
   static char line[180];
   strcpy (line, " -- rcdaqEventiterator reading from ");
@@ -101,8 +127,8 @@ char * rcdaqEventiterator::getIdTag () const
 
 Event * rcdaqEventiterator::getNextEvent()
 {
+  if ( _defunct ) return 0;
   Event *evt = 0;
-
 
   // if we had a read error before, we just return
   if (last_read_status) return NULL;
@@ -141,34 +167,37 @@ int rcdaqEventiterator::read_next_buffer()
       bptr = 0;
     }
 
+  _sockfd  = socket(AF_INET, SOCK_STREAM, 0);
+  if ( _sockfd < 0) return 0;
 
+  if ( connect(_sockfd, (struct sockaddr*) &server, sizeof(server)) < 0 ) 
+	{
+	  //std::cout << "error in connect" << std::endl;
+	  close (_sockfd);
+	  usleep(1000);  // we just slow down a bit to limit the rate or retries
+	  return 0;
+	}
+  
   // say that this is our max size
-  int flag = 64*1024*1024;
-  socklen_t slen=sizeof(server);
-  if (sendto(_sockfd, &flag, sizeof(int), 0, (sockaddr *) &server, slen)==-1)
+  int flag = htonl(64*1024*1024);
+  
+  int status = writen (_sockfd,(char *)  &flag, 4);
+  if ( status < 0)
     {
-      perror("sendto 1 " );
+      close (_sockfd);
+      return 0;
     }
-      
 
-
-  int xc;
-  int total;
-
-  //receive the total number of bytes we are going to get 
-  slen=sizeof(server);
-  if ( ( xc = recvfrom(_sockfd, &total , 4 , 0, (sockaddr *) &server, &slen) ) ==-1)
+  
+  int sizetobesent;
+  status = readn (_sockfd, (char *) &sizetobesent, 4);
+  if ( status < 0)
     {
-      perror("receive total number words " );
+      close (_sockfd);
+      return 0;
     }
-  buffer_size = ntohl(total);
 
-
-  // read the first record into initialbuffer
-      
-  //  COUT << "reading next buffer buffersize = " << buffer_size << std::endl; 
-
-
+  buffer_size = ntohl(sizetobesent);
   int i;
   if (bp) 
     {
@@ -177,46 +206,65 @@ int rcdaqEventiterator::read_next_buffer()
 	  delete [] bp;
 	  i = (buffer_size +8191) /8192;
 	  allocatedsize = i * 2048;
-	  bp = new int[allocatedsize];
+	  bp = new PHDWORD[allocatedsize];
 	}
     }
   else
     {
       i = (buffer_size +8191) /8192;
-      allocatedsize = i * 2048;
-      bp = new int[allocatedsize];
+      allocatedsize = i * BUFFERBLOCKSIZE/4;
+      bp = new PHDWORD[allocatedsize];
+
     }
 
-  int max_sock_length = 48*1024;
-
-  char *cp = (char *) bp;
-
-  // now we read records until the whole buffer is read 
-  while ( ip < buffer_size)
+  status = readn ( _sockfd, (char *) bp, buffer_size);
+  if ( status < 0)
     {
-      // read the next record
-      
-      
-      slen=sizeof(server);
-      if ( ( xc = recvfrom(_sockfd, cp , max_sock_length , 0, (sockaddr *) &server, &slen) ) ==-1)
-	{
-	  perror("receive " );
-	}
-      cp+=xc;
-      ip+=xc; 
-      //      cout << "sending ack " << ip  << endl;
-      int ackvalue = 101;
-      if (sendto(_sockfd, &ackvalue , sizeof(int), 0, (sockaddr *) &server, slen)==-1)
-      	{
-      	  perror("sendto 1 " );
-      	}
-      
-
+      close (_sockfd);
+      return 0;
     }
 
-  //  cout << "received: " << ip << "  bytes" << endl;
-  // and initialize the current_index to be the first event
-  bptr = new oncsBuffer ( bp, allocatedsize );
-  return 0;
+  int ackvalue = htonl(101);
+  writen (_sockfd,(char *)  &ackvalue, 4);
+  close (_sockfd);
+  
+  return buffer::makeBuffer( bp, allocatedsize, &bptr);
+
 }
 
+int rcdaqEventiterator::readn (int fd, char *ptr, int nbytes)
+{
+  int nleft, nread;
+  nleft = nbytes;
+  while ( nleft>0 )
+    {
+      nread = recv (fd, ptr, nleft, MSG_NOSIGNAL);
+      if ( nread < 0 )
+	{
+	  return nread;
+	}
+      else if (nread == 0) 
+	break;
+      nleft -= nread;
+      ptr += nread;
+    }
+  return (nbytes-nleft);
+}
+
+
+int rcdaqEventiterator::writen (int fd, char *ptr, int nbytes)
+{
+  int nleft, nwritten;
+  nleft = nbytes;
+  while ( nleft>0 )
+    {
+      nwritten = send (fd, ptr, nleft, MSG_NOSIGNAL);
+      if ( nwritten < 0 )
+	{
+	  return nwritten;
+	}
+      nleft -= nwritten;
+      ptr += nwritten;
+    }
+  return (nbytes-nleft);
+}

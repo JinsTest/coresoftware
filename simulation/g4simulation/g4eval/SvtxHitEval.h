@@ -2,10 +2,16 @@
 #ifndef __SVTXHITEVAL_H__
 #define __SVTXHITEVAL_H__
 
+#include "SvtxTruthEval.h"
+
 #include <phool/PHCompositeNode.h>
+#include <g4hough/SvtxHitMap.h>
 #include <g4hough/SvtxHit.h>
+#include <g4detectors/PHG4CylinderCellContainer.h>
 #include <g4detectors/PHG4CylinderCell.h>
+#include <g4main/PHG4HitContainer.h>
 #include <g4main/PHG4Hit.h>
+#include <g4main/PHG4TruthInfoContainer.h>
 #include <g4main/PHG4Particle.h>
 
 #include <set>
@@ -16,11 +22,25 @@ class SvtxHitEval {
 public:
 
   SvtxHitEval(PHCompositeNode *topNode);
-  virtual ~SvtxHitEval() {}
+  virtual ~SvtxHitEval();
 
   void next_event(PHCompositeNode *topNode);
-  void do_caching(bool do_cache) {_do_cache = do_cache;}
-
+  void do_caching(bool do_cache) {
+    _do_cache = do_cache;
+    _trutheval.do_caching(do_cache);
+  }
+  void set_strict(bool strict) {
+    _strict = strict;
+    _trutheval.set_strict(strict);
+  }
+  void set_verbosity(int verbosity) {
+    _verbosity = verbosity;
+    _trutheval.set_verbosity(verbosity);
+  }
+  
+  // access the clustereval (and its cached values)
+  SvtxTruthEval* get_truth_eval() {return &_trutheval;}
+  
   PHG4CylinderCell* get_cell(SvtxHit* hit);
   
   // backtrace through to PHG4Hits
@@ -39,10 +59,26 @@ public:
   // overlap calculations
   float get_energy_contribution (SvtxHit* svtxhit, PHG4Particle* truthparticle);
   float get_energy_contribution (SvtxHit* svtxhit, PHG4Hit* truthhit);
+
+  unsigned int get_errors() {return _errors + _trutheval.get_errors();}
   
 private:
-  PHCompositeNode* _topNode;
 
+  void get_node_pointers(PHCompositeNode *topNode);
+  bool has_node_pointers();
+
+  SvtxTruthEval _trutheval;
+  SvtxHitMap* _hitmap;
+  PHG4CylinderCellContainer* _g4cells_svtx;
+  PHG4CylinderCellContainer* _g4cells_tracker;
+  PHG4HitContainer* _g4hits_svtx;
+  PHG4HitContainer* _g4hits_tracker;
+  PHG4TruthInfoContainer* _truthinfo;
+
+  bool _strict;
+  int _verbosity;
+  unsigned int _errors;
+  
   bool                                              _do_cache;
   std::map<SvtxHit*,std::set<PHG4Hit*> >            _cache_all_truth_hits;
   std::map<SvtxHit*,PHG4Hit*>                       _cache_max_truth_hit_by_energy;

@@ -3,7 +3,7 @@
 #define __RCDAQEVENTITERATOR_H__
 
 #include "Eventiterator.h"
-#include "oncsBuffer.h"
+#include "buffer.h"
 
 #ifndef __CINT__
 #include <string>
@@ -22,10 +22,11 @@ class  rcdaqEventiterator : public Eventiterator {
 public:
 
   virtual ~rcdaqEventiterator();
-  rcdaqEventiterator(const char *ip = "127.0.0.1");
+  rcdaqEventiterator();
+  rcdaqEventiterator(const char *ip );
   rcdaqEventiterator(const char *ip, int &status);
 
-  char * getIdTag() const;
+  const char * getIdTag() const;
   virtual void identify(std::ostream& os = std::cout) const;
 
 
@@ -35,19 +36,24 @@ protected:
   int read_next_buffer();
 
   int setup(const char *ip, int &status);
+
+  int readn (int fd, char *ptr, int nbytes);
+  int writen (int fd, char *ptr, int nbytes);
+
   
   std::string _theIP;
 
   int _sockfd;
-  int initialbuffer[BUFFERSIZE];
-  int *bp;
+  PHDWORD initialbuffer[BUFFERSIZE];
+  PHDWORD *bp;
   int allocatedsize;
 
   int current_index;
   int last_read_status;
   int buffer_size;
-  oncsBuffer *bptr;
+  buffer *bptr;
   struct sockaddr_in server;
+  int _defunct;
 
 };
 

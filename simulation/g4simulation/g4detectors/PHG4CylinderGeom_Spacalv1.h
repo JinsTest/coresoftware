@@ -13,6 +13,9 @@
 #include "PHG4CylinderGeomv2.h"
 #include <string>
 #include <cmath>
+#include <map>
+
+class PHG4Parameters;
 
 class PHG4CylinderGeom_Spacalv1 : public PHG4CylinderGeomv2
 {
@@ -38,6 +41,10 @@ public:
   virtual
   void
   SetDefault();
+
+  //! load parameters from PHG4Parameters, which interface to Database/XML/ROOT files
+  virtual void ImportParameters(const PHG4Parameters & param);
+
   ///@}
 
   /** @name Set Cylinder Geometry
@@ -113,6 +120,27 @@ public:
   virtual
   double
   get_z_distance() const;
+
+  //! sector map sector_ID -> azimuthal rotation.
+  typedef std::map<int,double> sector_map_t;
+
+  //! sector map sector_ID -> azimuthal rotation.
+  const sector_map_t &
+  get_sector_map() const
+  {
+    return sector_map;
+  }
+
+  //! sector map sector_ID -> azimuthal rotation.
+  sector_map_t &
+  get_sector_map()
+  {
+    return sector_map;
+  }
+
+  //! load a default map that populate all the sectors
+  void
+  init_default_sector_map();
 
   ///@}
 
@@ -307,7 +335,11 @@ protected:
   bool virualize_fiber;
   int construction_verbose;
 
-ClassDef(PHG4CylinderGeom_Spacalv1,1)
+  //! sector map sector_ID -> azimuthal rotation.
+  sector_map_t sector_map;
+
+
+ClassDef(PHG4CylinderGeom_Spacalv1,2)
 
 };
 

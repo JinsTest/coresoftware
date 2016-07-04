@@ -15,13 +15,13 @@
 #include <g4main/PHG4InEvent.h>
 #include <g4main/PHG4Particle.h>
 //#include <PHG4Particlev2.h>
-//#include <PHPythiaJet/PHPyJetContainerV2.h>
+#include <g4jets/JetMap.h>
 
 #include <fun4all/PHTFileServer.h>
 #include <fun4all/Fun4AllReturnCodes.h>
 //#include <PHGeometry.h>
 
-#include <fun4all/getClass.h>
+#include <phool/getClass.h>
 
 #include <TTree.h>
 #include <TMath.h>
@@ -119,29 +119,27 @@ PHG4DSTReader::Init(PHCompositeNode*)
       nblocks++;
     }
 
-//  for (vector<string>::const_iterator it = _jet_postfix.begin();
-//      it != _jet_postfix.end(); ++it)
-//    {
-//      const char * class_name = PHPyJet_type::Class()->GetName();
-//
-//      const string & hname = *it;
-//
-////      string hname = Form("TOWER_%s", nodenam.c_str());
-////      _node_name.push_back(hname);
-//      cout << "PHG4DSTReader::Init - saving jets from node: " << hname << " - "
-//          << class_name << endl;
-//
-//      record rec;
-//      rec._cnt = 0;
-//      rec._name = hname;
-//      rec._arr = boost::make_shared<TClonesArray>(class_name, arr_size);
-//      rec._arr_ptr = rec._arr.get();
-//      rec._type = record::typ_jets;
-//
-//      _records.push_back(rec);
-//
-//      nblocks++;
-//    }
+  for (vector<string>::const_iterator it = _jet_postfix.begin();
+      it != _jet_postfix.end(); ++it)
+    {
+      const char * class_name = PHPyJet_type::Class()->GetName();
+
+      const string & hname = *it;
+
+      cout << "PHG4DSTReader::Init - saving jets from node: " << hname << " - "
+          << class_name << endl;
+
+      record rec;
+      rec._cnt = 0;
+      rec._name = hname;
+      rec._arr = boost::make_shared<TClonesArray>(class_name, arr_size);
+      rec._arr_ptr = rec._arr.get();
+      rec._type = record::typ_jets;
+
+      _records.push_back(rec);
+
+      nblocks++;
+    }
 
   if (_save_particle)
     {
@@ -229,16 +227,15 @@ int
 PHG4DSTReader::process_event(PHCompositeNode* topNode)
 {
 
-  const double significand = _event / TMath::Power(10, (int) (log10(_event)));
-
-  if (fmod(significand, 1.0) == 0 && significand <= 10)
-    cout << "PHG4DSTReader::process_event - " << _event << endl;
+//  const double significand = _event / TMath::Power(10, (int) (log10(_event)));
+//
+//  if (fmod(significand, 1.0) == 0 && significand <= 10)
+//    cout << "PHG4DSTReader::process_event - " << _event << endl;
   _event++;
 
   //clean ups
-  _vertex_map_old2new.clear();
-  _vertex_map_new2old.clear();
   _particle_set.clear();
+  _vertex_set.clear();
 
   PHG4TruthInfoContainer* truthInfoList = findNode::getClass<
       PHG4TruthInfoContainer>(topNode, "G4TruthInfo");
@@ -413,58 +410,58 @@ PHG4DSTReader::process_event(PHCompositeNode* topNode)
       else if (rec._type == record::typ_jets)
         {
 
-          std::cout
-              << "PHG4DSTReader::AddJet - Error - temp. disabled until jet added back to sPHENIX software"
-              << std::endl;
+//          std::cout
+//              << "PHG4DSTReader::AddJet - Error - temp. disabled until jet added back to sPHENIX software"
+//              << std::endl;
 //
-//          if (Verbosity() >= 2)
-//            cout << "PHG4DSTReader::process_event - processing jets " << rec._name
-//                << endl;
-//
-//          PHPyJetContainerV2 *hits = findNode::getClass<PHPyJetContainerV2>(topNode,
-//              rec._name);
-//          if (!hits)
-//            {
-//              if (_event < 2)
-//                cout
-//                    << "PHG4DSTReader::process_event - Error - can not find node "
-//                    << rec._name << endl;
-//
-//            }
-//          else
-//            {
-//
-//              if (Verbosity() >= 2)
-//                cout << "PHG4DSTReader::process_event - processing " << rec._name
-//                    << " and received " << hits->size() << " jets"
-//                    << endl;
-//
-//              for (unsigned int i = 0; i < hits->size(); i++)
-//                {
-//                  PHPyJet * hit_raw = hits->getJet(i);
-//
-//                  if (Verbosity() >= 2)
-//                    cout << "PHG4DSTReader::process_event - processing jet "
-//                        << rec._name << " @ (" << hit_raw->Eta() << ", "
-//                        << hit_raw->Phi() << "), pT = " << hit_raw->Pt() << " - with raw type "
-//                        << hit_raw->ClassName() << endl;
-//
-//                  PHPyJet_type * hit = dynamic_cast<PHPyJet_type *>(hit_raw);
-//
-//                  assert(hit);
-//
-//                  new ((*(rec._arr.get()))[rec._cnt]) PHPyJet_type();
-//
-//
-//                  PHPyJet_type * new_hit =
-//                      dynamic_cast<PHPyJet_type *>(rec._arr.get()->At(rec._cnt));
-//                  assert(new_hit);
-//
-//                  *new_hit = (*hit);
-//
-//                  rec._cnt++;
-//                }
-//            } // if (!hits)
+          if (Verbosity() >= 2)
+            cout << "PHG4DSTReader::process_event - processing jets "
+                << rec._name << endl;
+
+          JetMap *hits = findNode::getClass<JetMap>(topNode, rec._name);
+          if (!hits)
+            {
+              if (_event < 2)
+                cout
+                    << "PHG4DSTReader::process_event - Error - can not find node "
+                    << rec._name << endl;
+
+            }
+          else
+            {
+
+              if (Verbosity() >= 2)
+                cout << "PHG4DSTReader::process_event - processing "
+                    << rec._name << " and received " << hits->size() << " jets"
+                    << endl;
+
+              // for every recojet
+              for (JetMap::Iter iter = hits->begin(); iter != hits->end();
+                  ++iter)
+                {
+                  Jet* hit_raw = iter->second;
+
+                  if (Verbosity() >= 2)
+                    cout << "PHG4DSTReader::process_event - processing jet "
+                        << rec._name << " @ (" << hit_raw->get_eta() << ", "
+                        << hit_raw->get_phi() << "), pT = " << hit_raw->get_pt()
+                        << " - with raw type " << hit_raw->ClassName() << endl;
+
+                  PHPyJet_type * hit = dynamic_cast<PHPyJet_type *>(hit_raw);
+
+                  assert(hit);
+
+                  new ((*(rec._arr.get()))[rec._cnt]) PHPyJet_type();
+
+                  PHPyJet_type * new_hit =
+                      dynamic_cast<PHPyJet_type *>(rec._arr.get()->At(rec._cnt));
+                  assert(new_hit);
+
+                  *new_hit = (*hit);
+
+                  rec._cnt++;
+                }
+            } // if (!hits)
         } //      if (rec._type == record::typ_hit)
       else if (rec._type == record::typ_part)
         {
@@ -490,11 +487,6 @@ PHG4DSTReader::process_event(PHCompositeNode* topNode)
 
                   _particle_set.insert(particle_iter->first);
 
-//                  PHG4Particle * part = particle_iter->second;
-//
-//                  assert(part);
-//
-//                  add_particle(rec, part);
                 }
 
             } //          if (_load_all_particle)
@@ -510,43 +502,18 @@ PHG4DSTReader::process_event(PHCompositeNode* topNode)
                   once = false;
                 }
 
-//              PHG4InEvent *inEvent = findNode::getClass<PHG4InEvent>(topNode,
-//                  "PHG4INEVENT");
-//              assert(inEvent);
-//
-//              pair<multimap<int, PHG4Particle *>::const_iterator,
-//                  multimap<int, PHG4Particle *>::const_iterator> particlebegin_end =
-//                  inEvent->GetParticles();
-//
-//              multimap<int, PHG4Particle *>::const_iterator particle_iter;
-//
-//              for (particle_iter = particlebegin_end.first;
-//                  particle_iter != particlebegin_end.second; particle_iter++)
-//                {
-//
-//                  PHG4Particle * part = particle_iter->second;
-//
-//                  assert(part);
-//
-//                  add_particle(rec, part);
-//                }
+              PHG4TruthInfoContainer::ConstRange primary_range =
+                  truthInfoList->GetPrimaryParticleRange();
 
-              for (particle_iter = truthInfoList->GetPrimaryMap().begin();
-                  particle_iter != truthInfoList->GetPrimaryMap().end();
-                  particle_iter++)
+              for (PHG4TruthInfoContainer::ConstIterator particle_iter =
+                  primary_range.first; particle_iter != primary_range.second;
+                  ++particle_iter)
                 {
 
                   _particle_set.insert(particle_iter->first);
 
-//                  PHG4Particle * part = particle_iter->second;
-//
-//                  assert(part);
-//
-//                  add_particle(rec, part);
-                }
-
-            } //          if (_load_all_particle) else
-
+                } //          if (_load_all_particle) else
+            }
           for (PartSet_t::const_iterator i = _particle_set.begin();
               i != _particle_set.end(); i++)
             {
@@ -572,43 +539,31 @@ PHG4DSTReader::process_event(PHCompositeNode* topNode)
           if (once)
             {
               cout
-                  << "PHG4DSTReader::process_event - will load all vertex from G4TruthInfo"
+                  << "PHG4DSTReader::process_event - will load vertex from G4TruthInfo"
                   << endl;
 
               once = false;
             }
 
-          const PHG4TruthInfoContainer::VtxMap & vmap =
-              truthInfoList->GetVtxMap();
-
-          for (VtxMap_t::const_iterator i = _vertex_map_new2old.begin();
-              i != _vertex_map_new2old.end(); i++)
+          for (PartSet_t::const_iterator i = _vertex_set.begin();
+              i != _vertex_set.end(); ++i)
             {
-              const int new_id = i->first;
-              const int old_id = i->second;
-//              cout << "new_id =" << new_id << endl;
-//              cout << "rec._cnt =" << rec._cnt << endl;
-              assert(new_id == (int)rec._cnt);
 
-              PHG4TruthInfoContainer::VtxMap::const_iterator it_vmap =
-                  vmap.find(old_id);
-
-              new ((*(rec._arr.get()))[rec._cnt]) vertex_type();
-
-              if (it_vmap == vmap.end())
+              PHG4VtxPoint * v = truthInfoList->GetVtx(*i);
+              if (!v)
                 {
                   cout
                       << "PHG4DSTReader::process_event - ERROR - can not find vertex ID "
-                      << old_id << " in G4TruthInfo" << endl;
+                      << *i << " in G4TruthInfo" << endl;
 
                   continue;
                 }
-              PHG4VtxPoint * v = it_vmap->second;
-              assert(v);
+
+              new ((*(rec._arr.get()))[rec._cnt]) vertex_type();
 
               if (Verbosity() >= 2)
                 cout << "PHG4DSTReader::process_event - saving vertex id "
-                    << old_id << " (old) -> " << new_id << " (new)" << endl;
+                    << *i  << endl;
 
               vertex_type * new_v =
                   static_cast<vertex_type *>(rec._arr.get()->At(rec._cnt));
@@ -618,6 +573,7 @@ PHG4DSTReader::process_event(PHCompositeNode* topNode)
               new_v->set_y(v->get_y());
               new_v->set_z(v->get_z());
               new_v->set_t(v->get_t());
+              new_v->set_id(v->get_id());
 
               rec._cnt++;
             } // else if (rec._type == record::typ_vertex)
@@ -653,7 +609,7 @@ PHG4DSTReader::add_particle(PHG4DSTReader::record & rec, PHG4Particle * part)
   assert(new_part);
 
   new_part->set_track_id(part->get_track_id());
-//  new_part->set_vtx_id(part->get_vtx_id());
+  new_part->set_vtx_id(part->get_vtx_id());
   new_part->set_parent_id(part->get_parent_id());
   new_part->set_primary_id(part->get_primary_id());
   new_part->set_name(part->get_name());
@@ -663,33 +619,7 @@ PHG4DSTReader::add_particle(PHG4DSTReader::record & rec, PHG4Particle * part)
   new_part->set_pz(part->get_pz());
   new_part->set_e(part->get_e());
 
-  //remap vertex ID
-  if (_save_vertex)
-    {
-
-      const int old_id = part->get_vtx_id();
-      VtxMap_t::const_iterator it = _vertex_map_old2new.find(old_id);
-      int new_id = -1;
-      if (it == _vertex_map_old2new.end())
-        {
-          new_id = _vertex_map_old2new.size();
-          _vertex_map_old2new[old_id] = new_id;
-          _vertex_map_new2old[new_id] = old_id;
-        }
-      else
-        new_id = it->second;
-
-      new_part->set_vtx_id(new_id);
-
-      if (Verbosity() >= 2)
-        cout << "PHG4DSTReader::add_particle - saving particle/track id "
-            << part->get_track_id() << " which map vtx ID " << old_id
-            << " (old) -> " << new_id << " (new)" << endl;
-    }
-  else
-    {
-      new_part->set_vtx_id(part->get_vtx_id());
-    }
+  _vertex_set.insert(part->get_vtx_id());
 
   rec._cnt++;
 }

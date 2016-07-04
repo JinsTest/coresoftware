@@ -1,10 +1,9 @@
 #include "PHG4FCalSubsystem.h"
 #include "PHG4FCalDetector.h"
 #include "PHG4FCalSteppingAction.h"
-#include "g4main/PHG4NullSteppingAction.h"
 
 #include <g4main/PHG4HitContainer.h>
-#include <fun4all/getClass.h>
+#include <phool/getClass.h>
 
 //_______________________________________________________________________
 PHG4FCalSubsystem::PHG4FCalSubsystem( const char* name ):
@@ -24,7 +23,7 @@ int PHG4FCalSubsystem::Init( PHCompositeNode* topNode )
     
     PHNodeIterator iter( topNode );
     PHCompositeNode *dstNode = dynamic_cast<PHCompositeNode*>(iter.findFirst("PHCompositeNode","DST" ));
-    dstNode->addNode( new PHIODataNode<PHObject>( fcal_hits = new PHG4HitContainer(), "G4HIT_FCAL","PHObject" ));
+    dstNode->addNode( new PHIODataNode<PHObject>( fcal_hits = new PHG4HitContainer("G4HIT_FCAL"), "G4HIT_FCAL","PHObject" ));
     
   }
   

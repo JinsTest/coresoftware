@@ -1,6 +1,11 @@
 AUTOMAKE_OPTIONS = foreign
 
-AM_CXXFLAGS = -DG4INTY_USE_XT -DG4VIS_USE_OPENGL -DG4UI_USE_TCSH -DG4UI_USE_XM -DG4VIS_USE_OPENGLXM -DG4VIS_USE_RAYTRACERX -DG4VIS_USE_OPENGLX 
+AM_CXXFLAGS = -DG4INTY_USE_XT -DG4VIS_USE_OPENGL -DG4UI_USE_TCSH -DG4UI_USE_XM -DG4VIS_USE_OPENGLXM -DG4VIS_USE_RAYTRACERX -DG4VIS_USE_OPENGLX
+
+# set in configure.in to check if gcc version >= 4.8
+if GCC_GE_48
+  AM_CXXFLAGS += -std=c++11
+endif
 
 # List of shared libraries to produce
 lib_LTLIBRARIES = \
@@ -12,6 +17,7 @@ INCLUDES = \
     -isystem $(OFFLINE_MAIN)/include \
     -isystem $(ROOTSYS)/include \
     -isystem ${G4_MAIN}/include \
+    -I$(OFFLINE_MAIN)/include/eigen3 \
     -isystem ${G4_MAIN}/include/Geant4
 
 RINCLUDES = \
@@ -34,6 +40,7 @@ libphg4hit_la_LIBADD = \
 libphg4hit_la_SOURCES = \
     PHG4Hit_Dict.cc \
     PHG4HitReadBack.cc \
+    PHG4HitDefs.cc \
     PHG4Hit.cc \
     PHG4Hitv1.cc \
     PHG4HitEval.cc \
@@ -41,6 +48,8 @@ libphg4hit_la_SOURCES = \
     PHG4Particle.cc \
     PHG4Particlev1.cc \
     PHG4Particlev2.cc \
+    PHG4Shower.cc \
+    PHG4Showerv1.cc \
     PHG4TruthInfoContainer.cc \
     PHG4VtxPoint.cc \
     PHG4VtxPointv1.cc
@@ -61,6 +70,7 @@ libg4testbench_la_SOURCES = \
     PHG4InEventReadBack.cc \
     PHG4InputFilter.cc \
     PHG4ParameterisationTubsEta.cc \
+    PHG4PileupGenerator.cc \
     PHG4SimpleEventGenerator.cc \
     PHG4ParticleGun.cc \
     PHG4ParticleGeneratorBase.cc \
@@ -74,13 +84,13 @@ libg4testbench_la_SOURCES = \
     PHG4PrimaryGeneratorAction.cc \
     PHG4Reco.cc \
     PHG4RegionInformation.cc \
-    PHG4TrackInformation.cc \
     PHG4TrackUserInfoV1.cc \
     PHG4TruthEventAction.cc \
     PHG4TruthSteppingAction.cc \
     PHG4TruthSubsystem.cc \
     PHG4TruthTrackingAction.cc \
     PHG4SteppingAction.cc \
+    PHG4UIsession.cc \
     PHG4Utils.cc \
     ReadEICFiles.cc
 
@@ -89,6 +99,7 @@ libg4testbench_la_LDFLAGS = \
     -L$(OFFLINE_MAIN)/lib \
     -lboost_filesystem \
     -lg4field -lg4decayer \
+    -lgsl -lgslcblas \
     -lvararray \
     -lHepMC \
     -lphhepmc \
@@ -111,14 +122,16 @@ pkginclude_HEADERS = \
   PHG4HitEval.h \
   PHG4HitContainer.h \
   PHG4InEvent.h \
-  PHG4NullSteppingAction.h \
   PHG4Particle.h \
   PHG4Particlev1.h \
   PHG4Particlev2.h \
+  PHG4Shower.h \
+  PHG4Showerv1.h \
   PHG4PhenixDetector.h \
   PHG4RegionInformation.h \
   PHG4SteppingAction.h \
   PHG4Subsystem.h \
+  PHG4TrackingAction.h \
   PHG4TrackUserInfoV1.h \
   PHG4TruthInfoContainer.h \
   PHG4Utils.h \
@@ -161,6 +174,7 @@ PHG4_Dict.cc: \
   PHG4InEventCompress.h \
   PHG4InEventReadBack.h \
   PHG4InputFilter.h \
+  PHG4PileupGenerator.h \
   PHG4SimpleEventGenerator.h \
   PHG4ParticleGun.h \
   PHG4ParticleGenerator.h \
@@ -181,6 +195,8 @@ PHG4Hit_Dict.cc: \
   PHG4Hitv1.h \
   PHG4HitEval.h \
   PHG4HitContainer.h \
+  PHG4Shower.h \
+  PHG4Showerv1.h \
   PHG4Particle.h \
   PHG4Particlev1.h \
   PHG4Particlev2.h \

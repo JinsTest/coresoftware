@@ -1,5 +1,3 @@
-// $$Id: PHG4RICHSteppingAction.cc,v 1.5 2015/01/07 21:54:33 pinkenbu Exp $$
-
 /*!
  * \file ${file_name}
  * \brief
@@ -13,12 +11,13 @@
 #include <g4main/PHG4HitContainer.h>
 #include <g4main/PHG4Hit.h>
 #include <g4main/PHG4Hitv1.h>
+#include <g4main/PHG4Shower.h>
 #include <g4main/PHG4TrackUserInfoV1.h>
 
-#include "Geant4/G4ProcessManager.hh"
-#include "Geant4/G4SDManager.hh"
+#include <Geant4/G4ProcessManager.hh>
+#include <Geant4/G4SDManager.hh>
 
-#include <fun4all/getClass.h>
+#include <phool/getClass.h>
 
 #include <Geant4/G4Step.hh>
 
@@ -145,15 +144,15 @@ bool PHG4RICHSteppingAction::MakeHit(const G4Step* aStep){
 
   //set the track ID
   {
-    int trkoffset = 0;
+    hit->set_trkid(aTrack->GetTrackID());
     if ( G4VUserTrackInformation* p = aTrack->GetUserInformation() )
       {
-        if ( PHG4TrackUserInfoV1* pp = dynamic_cast<PHG4TrackUserInfoV1*>(p) )
-          {
-            trkoffset = pp->GetTrackIdOffset();
-          }
+	if ( PHG4TrackUserInfoV1* pp = dynamic_cast<PHG4TrackUserInfoV1*>(p) )
+	  {
+	    hit->set_trkid(pp->GetUserTrackId());
+	    hit->set_shower_id(pp->GetShower()->get_id());
+	  }
       }
-    hit->set_trkid(aTrack->GetTrackID() + trkoffset);
   }
 
   // set optical photon energy deposition to 0
@@ -162,6 +161,16 @@ bool PHG4RICHSteppingAction::MakeHit(const G4Step* aStep){
   // Now add the hit
   hits_->AddHit(layer_id, hit);
 
+  {
+    if ( G4VUserTrackInformation* p = aTrack->GetUserInformation() )
+      {
+	if ( PHG4TrackUserInfoV1* pp = dynamic_cast<PHG4TrackUserInfoV1*>(p) )
+	  {
+	    pp->GetShower()->add_g4hit_id(hits_->GetID(),hit->get_hit_id());
+	  }
+      }
+  }
+  
   // return true to indicate the hit was used
   return true;
 }

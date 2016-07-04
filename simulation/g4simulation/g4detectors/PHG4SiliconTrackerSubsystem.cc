@@ -4,7 +4,7 @@
 #include "PHG4SiliconTrackerSteppingAction.h"
 
 #include <g4main/PHG4HitContainer.h>
-#include <fun4all/getClass.h>
+#include <phool/getClass.h>
 
 #include <Geant4/globals.hh>
 
@@ -93,7 +93,7 @@ int PHG4SiliconTrackerSubsystem::Init( PHCompositeNode* topNode )
       if ( !block_hits )
 	{
 
-	  dstNode->addNode( new PHIODataNode<PHObject>( block_hits = new PHG4HitContainer(), nodename.str().c_str(), "PHObject" ));
+	  dstNode->addNode( new PHIODataNode<PHObject>( block_hits = new PHG4HitContainer(nodename.str()), nodename.str().c_str(), "PHObject" ));
 
 	}
       PHG4EventActionClearZeroEdep *eventaction = new PHG4EventActionClearZeroEdep(topNode, nodename.str());
@@ -112,7 +112,7 @@ int PHG4SiliconTrackerSubsystem::Init( PHCompositeNode* topNode )
 	  if ( !block_hits )
 	    {
 
-	      dstNode->addNode( new PHIODataNode<PHObject>( block_hits = new PHG4HitContainer(), nodename.str().c_str(), "PHObject" ));
+	      dstNode->addNode( new PHIODataNode<PHObject>( block_hits = new PHG4HitContainer(nodename.str()), nodename.str().c_str(), "PHObject" ));
 
 	    }
 	  eventaction->AddNode(nodename.str());

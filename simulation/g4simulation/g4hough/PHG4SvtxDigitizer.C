@@ -1,12 +1,15 @@
 #include "PHG4SvtxDigitizer.h"
 
 #include "SvtxHitMap.h"
+#include "SvtxHitMap_v1.h"
+#include "SvtxHit.h"
+#include "SvtxHit_v1.h"
 
 #include <fun4all/Fun4AllReturnCodes.h>
 #include <phool/PHCompositeNode.h>
 #include <phool/PHIODataNode.h>
 #include <phool/PHNodeIterator.h>
-#include <fun4all/getClass.h>
+#include <phool/getClass.h>
 #include <g4detectors/PHG4CylinderCellContainer.h>
 #include <g4detectors/PHG4CylinderCell.h>
 #include <g4detectors/PHG4CylinderCellGeomContainer.h>
@@ -52,7 +55,7 @@ int PHG4SvtxDigitizer::InitRun(PHCompositeNode* topNode) {
   // Create the Hit node if required
   SvtxHitMap *svxhits = findNode::getClass<SvtxHitMap>(topNode,"SvtxHitMap");
   if (!svxhits) {
-    svxhits = new SvtxHitMap();
+    svxhits = new SvtxHitMap_v1();
     PHIODataNode<PHObject> *SvtxHitMapNode =
       new PHIODataNode<PHObject>(svxhits, "SvtxHitMap", "PHObject");
     svxNode->addNode(SvtxHitMapNode);
@@ -65,9 +68,8 @@ int PHG4SvtxDigitizer::InitRun(PHCompositeNode* topNode) {
   // Report Settings
   //----------------
   
-  if (verbosity >= 0) {
+  if (verbosity > 0) {
     cout << "====================== PHG4SvtxDigitizer::InitRun() =====================" << endl;
-    cout << " CVS Version: $Id: PHG4SvtxDigitizer.C,v 1.5 2015/04/21 23:47:10 pinkenbu Exp $" << endl;
     for (std::map<int,unsigned int>::iterator iter = _max_adc.begin();
 	 iter != _max_adc.end();
 	 ++iter) {
@@ -193,7 +195,7 @@ void PHG4SvtxDigitizer::DigitizeCylinderCells(PHCompositeNode *topNode) {
     
     PHG4CylinderCell* cell = celliter->second;
     
-    SvtxHit hit;
+    SvtxHit_v1 hit;
 
     hit.set_layer(cell->get_layer());
     hit.set_cellid(cell->get_cell_id());
@@ -205,8 +207,8 @@ void PHG4SvtxDigitizer::DigitizeCylinderCells(PHCompositeNode *topNode) {
     hit.set_adc(adc);
     hit.set_e(e);
 
-    SvtxHit* ptr = _hitmap->insert(hit);      
-    if (!ptr->IsValid()) {
+    SvtxHit* ptr = _hitmap->insert(&hit);      
+    if (!ptr->isValid()) {
       static bool first = true;
       if (first) {
 	cout << PHWHERE << "ERROR: Incomplete SvtxHits are being created" << endl;
@@ -240,7 +242,7 @@ void PHG4SvtxDigitizer::DigitizeLadderCells(PHCompositeNode *topNode) {
     
     PHG4CylinderCell* cell = celliter->second;
     
-    SvtxHit hit;
+    SvtxHit_v1 hit;
 
     hit.set_layer(cell->get_layer());
     hit.set_cellid(cell->get_cell_id());
@@ -252,8 +254,8 @@ void PHG4SvtxDigitizer::DigitizeLadderCells(PHCompositeNode *topNode) {
     hit.set_adc(adc);
     hit.set_e(e);
         
-    SvtxHit* ptr = _hitmap->insert(hit);      
-    if (!ptr->IsValid()) {
+    SvtxHit* ptr = _hitmap->insert(&hit);      
+    if (!ptr->isValid()) {
       static bool first = true;
       if (first) {
 	cout << PHWHERE << "ERROR: Incomplete SvtxHits are being created" << endl;
@@ -283,7 +285,7 @@ void PHG4SvtxDigitizer::PrintHits(PHCompositeNode *topNode) {
 	 iter != hitlist->end();
 	 ++iter) {
 
-      SvtxHit* hit = &iter->second;
+      SvtxHit* hit = iter->second;
       cout << ihit << " of " << hitlist->size() << endl;
       hit->identify();
       ++ihit;

@@ -1,27 +1,28 @@
 #include "PHG4BlockSteppingAction.h"
 #include "PHG4BlockDetector.h"
+#include "PHG4Parameters.h"
 
 #include <g4main/PHG4HitContainer.h>
 #include <g4main/PHG4Hit.h>
 #include <g4main/PHG4Hitv1.h>
-
+#include <g4main/PHG4Shower.h>
 #include <g4main/PHG4TrackUserInfoV1.h>
 
-#include <fun4all/getClass.h>
+#include <phool/getClass.h>
 
 #include <Geant4/G4Step.hh>
 #include <Geant4/G4SystemOfUnits.hh>
 
 #include <iostream>
 
-#define GEANTSTEPS
-
 using namespace std;
 //____________________________________________________________________________..
-PHG4BlockSteppingAction::PHG4BlockSteppingAction( PHG4BlockDetector* detector ):
+PHG4BlockSteppingAction::PHG4BlockSteppingAction( PHG4BlockDetector* detector, const PHG4Parameters *parameters ):
   detector_( detector ),
-  use_g4_steps(0),
-  use_ionisation_energy(0)
+  params(parameters),
+  active(params->get_int_param("active")),
+  IsBlackHole(params->get_int_param("blackhole")),
+  use_g4_steps(params->get_int_param("use_g4steps"))
 {}
 
 //____________________________________________________________________________..
@@ -42,17 +43,17 @@ bool PHG4BlockSteppingAction::UserSteppingAction( const G4Step* aStep, bool )
   const G4Track* aTrack = aStep->GetTrack();
 
   // if this block stops everything, just put all kinetic energy into edep
-   if (detector_->IsBlackHole())
-     {
-        edep = aTrack->GetKineticEnergy()/GeV;
-        G4Track* killtrack = const_cast<G4Track *> (aTrack);
-        killtrack->SetTrackStatus(fStopAndKill);
-     }
-
-  int layer_id = detector_->get_Layer();
-  // make sure we are in a volume
-  if ( detector_->IsActive() )
+  if (IsBlackHole)
     {
+      edep = aTrack->GetKineticEnergy()/GeV;
+      G4Track* killtrack = const_cast<G4Track *> (aTrack);
+      killtrack->SetTrackStatus(fStopAndKill);
+    }
+
+  // make sure we are in a volume
+  if ( active )
+    {
+      int layer_id = detector_->get_Layer();
       bool geantino = false;
       // the check for the pdg code speeds things up, I do not want to make 
       // an expensive string compare for every track when we know
@@ -64,19 +65,12 @@ bool PHG4BlockSteppingAction::UserSteppingAction( const G4Step* aStep, bool )
 	}
       G4StepPoint * prePoint = aStep->GetPreStepPoint();
       G4StepPoint * postPoint = aStep->GetPostStepPoint();
-//       cout << "track id " << aTrack->GetTrackID() << endl;
-//       cout << "time prepoint: " << prePoint->GetGlobalTime() << endl;
-//       cout << "time postpoint: " << postPoint->GetGlobalTime() << endl;
+      //       cout << "track id " << aTrack->GetTrackID() << endl;
+      //       cout << "time prepoint: " << prePoint->GetGlobalTime() << endl;
+      //       cout << "time postpoint: " << postPoint->GetGlobalTime() << endl;
       if (use_g4_steps)
 	{
-	  if (use_ionisation_energy)
-	    {
-	      hit = new PHG4Hitv1();
-	    }
-	  else
-	    {
-	      hit = new PHG4Hitv1();
-	    }
+	  hit = new PHG4Hitv1();
 	  //here we set the entrance values in cm
 	  hit->set_x( 0, prePoint->GetPosition().x() / cm);
 	  hit->set_y( 0, prePoint->GetPosition().y() / cm );
@@ -85,23 +79,33 @@ bool PHG4BlockSteppingAction::UserSteppingAction( const G4Step* aStep, bool )
 	  hit->set_t( 0, prePoint->GetGlobalTime() / nanosecond );
 	  //set the track ID
 	  {
-            int trkoffset = 0;
+            hit->set_trkid(aTrack->GetTrackID());
             if ( G4VUserTrackInformation* p = aTrack->GetUserInformation() )
 	      {
 		if ( PHG4TrackUserInfoV1* pp = dynamic_cast<PHG4TrackUserInfoV1*>(p) )
 		  {
-		    trkoffset = pp->GetTrackIdOffset();
+		    hit->set_trkid(pp->GetUserTrackId());
+		    hit->set_shower_id(pp->GetShower()->get_id());
 		  }
 	      }
-            hit->set_trkid(aTrack->GetTrackID() + trkoffset);
 	  }
 
 	  //set the initial energy deposit
 	  hit->set_edep(0);
-	  hit->set_eion(0); // only implemented for v4 otherwise empty
+	  hit->set_eion(0); 
 
 	  // Now add the hit
 	  hits_->AddHit(layer_id, hit);
+	  {
+	    if ( G4VUserTrackInformation* p = aTrack->GetUserInformation() )
+	      {
+		if ( PHG4TrackUserInfoV1* pp = dynamic_cast<PHG4TrackUserInfoV1*>(p) )
+		  {
+		    pp->GetShower()->add_g4hit_id(hits_->GetID(),hit->get_hit_id());
+		  }
+	      }
+	  }
+	  
 	}
       else // aggregate G4 steps inside volumes
 	{
@@ -109,7 +113,7 @@ bool PHG4BlockSteppingAction::UserSteppingAction( const G4Step* aStep, bool )
             {
             case fGeomBoundary:
             case fUndefined:
-		  hit = new PHG4Hitv1();
+	      hit = new PHG4Hitv1();
 	      //here we set the entrance values in cm
 	      hit->set_x( 0, prePoint->GetPosition().x() / cm);
 	      hit->set_y( 0, prePoint->GetPosition().y() / cm );
@@ -118,24 +122,34 @@ bool PHG4BlockSteppingAction::UserSteppingAction( const G4Step* aStep, bool )
 	      hit->set_t( 0, prePoint->GetGlobalTime() / nanosecond );
 	      //set the track ID
 	      {
-		int trkoffset = 0;
+		hit->set_trkid(aTrack->GetTrackID());
 		if ( G4VUserTrackInformation* p = aTrack->GetUserInformation() )
 		  {
 		    if ( PHG4TrackUserInfoV1* pp = dynamic_cast<PHG4TrackUserInfoV1*>(p) )
 		      {
-			trkoffset = pp->GetTrackIdOffset();
+			hit->set_trkid(pp->GetUserTrackId());
 		      }
 		  }
-		hit->set_trkid(aTrack->GetTrackID() + trkoffset);
 	      }
 
 	      //set the initial energy deposit
 	      hit->set_edep(0);
-        if (use_ionisation_energy)
-          hit->set_eion(0);
-
+	      if (active)
+		{
+		  hit->set_eion(0);
+		}
 	      // Now add the hit
 	      hits_->AddHit(layer_id, hit);
+	      {
+		if ( G4VUserTrackInformation* p = aTrack->GetUserInformation() )
+		  {
+		    if ( PHG4TrackUserInfoV1* pp = dynamic_cast<PHG4TrackUserInfoV1*>(p) )
+		      {
+			pp->GetShower()->add_g4hit_id(hits_->GetID(),hit->get_hit_id());
+		      }
+		  }
+	      }
+	      
 	      break;
 
             default:
@@ -153,8 +167,10 @@ bool PHG4BlockSteppingAction::UserSteppingAction( const G4Step* aStep, bool )
       hit->set_t( 1, postPoint->GetGlobalTime() / nanosecond );
       //sum up the energy to get total deposited
       hit->set_edep(hit->get_edep() + edep);
-      if (use_ionisation_energy)
-        hit->set_eion(hit->get_eion() + eion);
+      if (active)
+	{
+	  hit->set_eion(hit->get_eion() + eion);
+	}
       if (geantino)
 	{
 	  hit->set_edep(-1); // only energy=0 g4hits get dropped, this way geantinos survive the g4hit compression

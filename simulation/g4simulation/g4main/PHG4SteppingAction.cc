@@ -1,5 +1,3 @@
-// $Id: PHG4SteppingAction.cc,v 1.1 2015/01/07 23:50:05 jinhuang Exp $                                                                                             
-
 /*!
  * \file PHG4SteppingAction.cc
  * \brief 
@@ -8,7 +6,7 @@
  * \date $Date: 2015/01/07 23:50:05 $
  */
 
-#include <PHG4SteppingAction.h>
+#include "PHG4SteppingAction.h"
 
 #include <Geant4/G4Step.hh>
 #include <Geant4/G4Material.hh>
@@ -18,6 +16,7 @@
 #include <Geant4/G4SystemOfUnits.hh>
 
 #include <iostream>
+
 using namespace std;
 
 double
@@ -92,9 +91,11 @@ PHG4SteppingAction::GetVisibleEnergyDeposition(const G4Step* step)
   if (emSaturation)
     {
       if (verbosity)
-        emSaturation->SetVerbose(verbosity);
-
-      return emSaturation->VisibleEnergyDeposition(step) / GeV;
+	{
+	  emSaturation->SetVerbose(verbosity);
+	}
+      double visen = emSaturation->VisibleEnergyDepositionAtAStep(step) / GeV;
+      return visen;
     }
   else
     {
@@ -104,4 +105,25 @@ PHG4SteppingAction::GetVisibleEnergyDeposition(const G4Step* step)
 
       return 0;
     }
+}
+
+bool
+PHG4SteppingAction::IntOptExist(const std::string &name)
+{
+  if (opt_int.find(name) != opt_int.end())
+    {
+      return true;
+    }
+  return false;
+}
+
+int
+PHG4SteppingAction::GetIntOpt(const std::string &name)
+{
+  if (IntOptExist(name))
+    {
+      return opt_int.find(name)->second;
+    }
+  cout << "option " << name << " does not exist" << endl;
+  exit(1);
 }

@@ -3,7 +3,9 @@
 #include "SvtxHitMap.h"
 #include "SvtxHit.h"
 #include "SvtxClusterMap.h"
+#include "SvtxClusterMap_v1.h"
 #include "SvtxCluster.h"
+#include "SvtxCluster_v1.h"
 
 #include <g4main/PHG4Hit.h>
 #include <g4main/PHG4HitContainer.h>
@@ -11,7 +13,7 @@
 #include <phool/PHCompositeNode.h>
 #include <phool/PHIODataNode.h>
 #include <phool/PHNodeIterator.h>
-#include <fun4all/getClass.h>
+#include <phool/getClass.h>
 #include <g4detectors/PHG4CylinderCellContainer.h>
 #include <g4detectors/PHG4CylinderCellGeomContainer.h>
 #include <g4detectors/PHG4CylinderGeomContainer.h>
@@ -122,13 +124,19 @@ bool PHG4SvtxClusterizer::ladder_are_adjacent(const PHG4CylinderCell* lhs,
   return false;
 }
 
-PHG4SvtxClusterizer::PHG4SvtxClusterizer(const string &name) :
+PHG4SvtxClusterizer::PHG4SvtxClusterizer(const string &name,
+					 unsigned int min_layer,
+					 unsigned int max_layer) :
   SubsysReco(name),
   _hits(NULL),
   _clusterlist(NULL),
   _fraction_of_mip(0.5),
-  _timer(PHTimeServer::get()->insert_new(name)) {
-}
+  _thresholds_by_layer(),
+  _make_z_clustering(),
+  _make_e_weights(),
+  _min_layer(min_layer),
+  _max_layer(max_layer),
+  _timer(PHTimeServer::get()->insert_new(name)) {}
 
 int PHG4SvtxClusterizer::InitRun(PHCompositeNode* topNode) {
 
@@ -165,7 +173,7 @@ int PHG4SvtxClusterizer::InitRun(PHCompositeNode* topNode) {
   SvtxClusterMap *svxclusters 
     = findNode::getClass<SvtxClusterMap>(topNode,"SvtxClusterMap");
   if (!svxclusters) {
-    svxclusters = new SvtxClusterMap();
+    svxclusters = new SvtxClusterMap_v1();
     PHIODataNode<PHObject> *SvtxClusterMapNode =
       new PHIODataNode<PHObject>(svxclusters, "SvtxClusterMap", "PHObject");
     svxNode->addNode(SvtxClusterMapNode);
@@ -182,9 +190,8 @@ int PHG4SvtxClusterizer::InitRun(PHCompositeNode* topNode) {
   // Report Settings
   //----------------
 
-  if (verbosity >= 0) {
+  if (verbosity > 0) {
     cout << "====================== PHG4SvtxClusterizer::InitRun() =====================" << endl;
-    cout << " CVS Version: $Id: PHG4SvtxClusterizer.C,v 1.15 2015/04/21 23:47:09 pinkenbu Exp $" << endl;
     cout << " Fraction of expected thickness MIP energy = " << _fraction_of_mip << endl;
     for (std::map<int,float>::iterator iter = _thresholds_by_layer.begin();
 	 iter != _thresholds_by_layer.end();
@@ -320,7 +327,7 @@ void PHG4SvtxClusterizer::ClusterCylinderCells(PHCompositeNode *topNode) {
   for (SvtxHitMap::Iter iter = _hits->begin();
        iter != _hits->end();
        ++iter) {
-    SvtxHit* hit = &iter->second;
+    SvtxHit* hit = iter->second;
     layer_hits_mmap.insert(make_pair(hit->get_layer(),hit));
   }
   
@@ -331,6 +338,10 @@ void PHG4SvtxClusterizer::ClusterCylinderCells(PHCompositeNode *topNode) {
       ++layeriter) {
 
     int layer = layeriter->second->get_layer();
+
+    if ((unsigned int)layer < _min_layer) continue;
+    if ((unsigned int)layer > _max_layer) continue;
+    
     int nphibins = layeriter->second->get_phibins();
 
     // loop over all hits/cells in this layer
@@ -350,7 +361,6 @@ void PHG4SvtxClusterizer::ClusterCylinderCells(PHCompositeNode *topNode) {
     sort(cell_list.begin(), cell_list.end(), PHG4SvtxClusterizer::lessthan);
 
     typedef adjacency_list <vecS, vecS, undirectedS> Graph;
-    typedef graph_traits<Graph>::vertex_descriptor Vertex;
     Graph G;
 
     for(unsigned int i=0; i<cell_list.size(); i++) {
@@ -392,7 +402,7 @@ void PHG4SvtxClusterizer::ClusterCylinderCells(PHCompositeNode *topNode) {
       int layer = mapiter->second->get_layer();
       PHG4CylinderCellGeom* geom = geom_container->GetLayerCellGeom(layer);
       
-      SvtxCluster clus;
+      SvtxCluster_v1 clus;
       clus.set_layer( layer );
       float clus_energy = 0.0;
       unsigned int clus_adc = 0;
@@ -538,8 +548,8 @@ void PHG4SvtxClusterizer::ClusterCylinderCells(PHCompositeNode *topNode) {
       clus.set_error( 2 , 2 , COVAR_ERR[2][2] );
       
       if (clus_energy > get_threshold_by_layer(layer)) {
-	SvtxCluster* ptr = _clusterlist->insert(clus);
-	if (!ptr->IsValid()) {
+	SvtxCluster* ptr = _clusterlist->insert(&clus);
+	if (!ptr->isValid()) {
 	  static bool first = true;
 	  if (first) {
 	    cout << PHWHERE << "ERROR: Invalid SvtxClusters are being produced" << endl;
@@ -591,7 +601,7 @@ void PHG4SvtxClusterizer::ClusterLadderCells(PHCompositeNode *topNode) {
   for (SvtxHitMap::Iter iter = _hits->begin();
        iter != _hits->end();
        ++iter) {
-    SvtxHit* hit = &iter->second;
+    SvtxHit* hit = iter->second;
     layer_hits_mmap.insert(make_pair(hit->get_layer(),hit));
   }
   
@@ -602,6 +612,9 @@ void PHG4SvtxClusterizer::ClusterLadderCells(PHCompositeNode *topNode) {
 
     int layer = layeriter->second->get_layer();
 
+    if ((unsigned int)layer < _min_layer) continue;
+    if ((unsigned int)layer > _max_layer) continue;
+    
     std::map<PHG4CylinderCell*,SvtxHit*> cell_hit_map;
     vector<PHG4CylinderCell*> cell_list;
     for (std::multimap<int,SvtxHit*>::iterator hiter = layer_hits_mmap.lower_bound(layer);
@@ -619,7 +632,6 @@ void PHG4SvtxClusterizer::ClusterLadderCells(PHCompositeNode *topNode) {
     sort(cell_list.begin(), cell_list.end(), PHG4SvtxClusterizer::ladder_lessthan);
 
     typedef adjacency_list <vecS, vecS, undirectedS> Graph;
-    typedef graph_traits<Graph>::vertex_descriptor Vertex;
     Graph G;
 
     for(unsigned int i=0; i<cell_list.size(); i++) {
@@ -661,7 +673,7 @@ void PHG4SvtxClusterizer::ClusterLadderCells(PHCompositeNode *topNode) {
       int layer = mapiter->second->get_layer();
       PHG4CylinderGeom* geom = geom_container->GetLayerGeom(layer);
       
-      SvtxCluster clus;
+      SvtxCluster_v1 clus;
       clus.set_layer( layer );
       float clus_energy = 0.0;
       unsigned int clus_adc = 0;
@@ -831,8 +843,8 @@ void PHG4SvtxClusterizer::ClusterLadderCells(PHCompositeNode *topNode) {
       clus.set_error( 2 , 2 , COVAR_ERR[2][2] );
       
       if (clus_energy > get_threshold_by_layer(layer)) {
-	SvtxCluster* ptr = _clusterlist->insert(clus);
-	if (!ptr->IsValid()) {
+	SvtxCluster* ptr = _clusterlist->insert(&clus);
+	if (!ptr->isValid()) {
 	  static bool first = true;
 	  if (first) {
 	    cout << PHWHERE << "ERROR: Invalid SvtxClusters are being produced" << endl;
@@ -880,7 +892,7 @@ void PHG4SvtxClusterizer::PrintClusters(PHCompositeNode *topNode) {
 	 iter != clusterlist->end();
 	 ++iter) {
 
-      SvtxCluster* cluster = &iter->second;
+      SvtxCluster* cluster = iter->second;
       cout << icluster << " of " << clusterlist->size() << endl;
       cluster->identify();
       ++icluster;

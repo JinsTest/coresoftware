@@ -1,12 +1,18 @@
 #include "PHG4OuterHcalSubsystem.h"
 #include "PHG4OuterHcalDetector.h"
 #include "PHG4EventActionClearZeroEdep.h"
+#include "PHG4FlushStepTrackingAction.h"
 #include "PHG4OuterHcalSteppingAction.h"
 
 #include <g4main/PHG4HitContainer.h>
-#include <fun4all/getClass.h>
+
+#include <pdbcalbase/PdbParameterMap.h>
+
+#include <phool/getClass.h>
 
 #include <Geant4/globals.hh>
+
+#include <boost/foreach.hpp>
 
 #include <sstream>
 
@@ -14,115 +20,94 @@ using namespace std;
 
 //_______________________________________________________________________
 PHG4OuterHcalSubsystem::PHG4OuterHcalSubsystem( const std::string &name, const int lyr ):
-  PHG4Subsystem( name ),
-  detector_( 0 ),
+  PHG4DetectorSubsystem( name, lyr ),
+  detector_( NULL ),
   steppingAction_( NULL ),
+  trackingAction_(NULL),
   eventAction_(NULL),
-  place_in_x(0),
-  place_in_y(0),
-  place_in_z(0),
-  rot_in_x(0),
-  rot_in_y(0),
-  rot_in_z(0),
-  material("G4_AIR"),  // default - almost nothing
-  active(0),
-  absorberactive(0),
-  layer(lyr),
-  blackhole(0),
-  detector_type(name),
-  superdetector("NONE"),
-  light_scint_model_(true),
-  light_balance_(false),
-  light_balance_inner_radius_(0.0),
-  light_balance_inner_corr_(1.0),
-  light_balance_outer_radius_(10.0),
-  light_balance_outer_corr_(1.0),
-  steplimits(NAN)
+  enable_field_checker(0)
 {
-
-  // put the layer into the name so we get unique names
-  // for multiple layers
-  ostringstream nam;
-  nam << name << "_" << lyr;
-  Name(nam.str().c_str());
-  for (int i = 0; i < 3; i++)
-    {
-      dimension[i] = 100.0 * cm;
-    }
+  InitializeParameters();
 }
 
 //_______________________________________________________________________
-int PHG4OuterHcalSubsystem::Init( PHCompositeNode* topNode )
+int
+PHG4OuterHcalSubsystem::InitRunSubsystem( PHCompositeNode* topNode )
 {
   PHNodeIterator iter( topNode );
   PHCompositeNode *dstNode = dynamic_cast<PHCompositeNode*>(iter.findFirst("PHCompositeNode", "DST" ));
 
   // create detector
-  detector_ = new PHG4OuterHcalDetector(topNode, Name(), layer);
-  detector_->SetPlace(place_in_x, place_in_y, place_in_z);
-  detector_->SetXRot(rot_in_x);
-  detector_->SetYRot(rot_in_y);
-  detector_->SetZRot(rot_in_z);
-  detector_->SetActive(active);
-  detector_->SetAbsorberActive(absorberactive);
-  detector_->BlackHole(blackhole);
-  detector_->SuperDetector(superdetector);
-  detector_->OverlapCheck(overlapcheck);
-  detector_->SetStepLimits(steplimits);
-  if (active)
+  detector_ = new PHG4OuterHcalDetector(topNode, GetParams(), Name());
+  detector_->SuperDetector(SuperDetector());
+  detector_->OverlapCheck(CheckOverlap());
+  set<string> nodes;
+  if (GetParams()->get_int_param("active"))
     {
-      ostringstream nodename;
-      if (superdetector != "NONE")
+      PHCompositeNode *DetNode = dynamic_cast<PHCompositeNode*>(iter.findFirst("PHCompositeNode",SuperDetector()));
+      if (! DetNode)
 	{
-	  nodename <<  "G4HIT_" << superdetector;
+          DetNode = new PHCompositeNode(SuperDetector());
+          dstNode->addNode(DetNode);
+        }
+      ostringstream nodename;
+      if (SuperDetector() != "NONE")
+	{
+	  nodename <<  "G4HIT_" << SuperDetector();
 	}
       else
 	{
-	  nodename <<  "G4HIT_" << detector_type << "_" << layer;
+	  nodename <<  "G4HIT_" << Name();
 	}
-      // create hit list
-      PHG4HitContainer* block_hits =  findNode::getClass<PHG4HitContainer>( topNode , nodename.str().c_str());
-      if ( !block_hits )
-	{
-
-	  dstNode->addNode( new PHIODataNode<PHObject>( block_hits = new PHG4HitContainer(), nodename.str().c_str(), "PHObject" ));
-
-	}
-      PHG4EventActionClearZeroEdep *eventaction = new PHG4EventActionClearZeroEdep(topNode, nodename.str());
-      if (absorberactive)
+      nodes.insert(nodename.str());
+      if (GetParams()->get_int_param("absorberactive"))
 	{
 	  nodename.str("");
-	  if (superdetector != "NONE")
+	  if (SuperDetector() != "NONE")
 	    {
-	      nodename <<  "G4HIT_ABSORBER_" << superdetector;
+	      nodename <<  "G4HIT_ABSORBER_" << SuperDetector();
 	    }
 	  else
 	    {
-	      nodename <<  "G4HIT_ABSORBER_" << detector_type << "_" << layer;
+	      nodename <<  "G4HIT_ABSORBER_" << Name();
 	    }
-	  block_hits =  findNode::getClass<PHG4HitContainer>( topNode , nodename.str().c_str());
-	  if ( !block_hits )
-	    {
-
-	      dstNode->addNode( new PHIODataNode<PHObject>( block_hits = new PHG4HitContainer(), nodename.str().c_str(), "PHObject" ));
-
-	    }
-	  eventaction->AddNode(nodename.str());
+          nodes.insert(nodename.str());
 	}
-      eventAction_ = dynamic_cast<PHG4EventAction *> (eventaction);
+      BOOST_FOREACH(string node, nodes)
+	{
+	  PHG4HitContainer* g4_hits =  findNode::getClass<PHG4HitContainer>( topNode , node.c_str());
+	  if ( !g4_hits )
+	    {
+	      g4_hits = new PHG4HitContainer(node);
+	      DetNode->addNode( new PHIODataNode<PHObject>( g4_hits, node.c_str(), "PHObject" ));
+	    }
+	  if (! eventAction_)
+	    {
+	      eventAction_ = new PHG4EventActionClearZeroEdep(topNode, node);
+	    }
+	  else
+	    {
+	      PHG4EventActionClearZeroEdep *evtact = dynamic_cast<PHG4EventActionClearZeroEdep *>(eventAction_);
+	      evtact->AddNode(node);
+	    }
+	}
       // create stepping action
-      steppingAction_ = new PHG4OuterHcalSteppingAction(detector_);
-      if (light_balance_) {
-	steppingAction_->SetLightCorrection(light_balance_inner_radius_,
-					    light_balance_inner_corr_,
-					    light_balance_outer_radius_,
-					    light_balance_outer_corr_);
-      }
-      steppingAction_->SetLightScintModel(light_scint_model_);
+      steppingAction_ = new PHG4OuterHcalSteppingAction(detector_, GetParams());
+      steppingAction_->SetOpt("FieldChecker",enable_field_checker);
+      steppingAction_->Init();
     }
-  if (blackhole && !active)
+  else
     {
-      steppingAction_ = new PHG4OuterHcalSteppingAction(detector_);
+      if (GetParams()->get_int_param("blackhole"))
+	{
+	  steppingAction_ = new PHG4OuterHcalSteppingAction(detector_, GetParams());
+	  steppingAction_->SetOpt("FieldChecker",enable_field_checker);
+	  steppingAction_->Init();
+	}
+    }
+  if (steppingAction_)
+    {
+      trackingAction_ = new PHG4FlushStepTrackingAction(steppingAction_);
     }
   return 0;
 
@@ -141,6 +126,18 @@ PHG4OuterHcalSubsystem::process_event( PHCompositeNode * topNode )
     return 0;
 }
 
+void
+PHG4OuterHcalSubsystem::Print(const string &what) const
+{
+  cout << "Outer Hcal Parameters: " << endl;
+  GetParams()->Print();
+  if (detector_)
+    {
+      detector_->Print(what);
+    }
+  return;
+}
+
 
 //_______________________________________________________________________
 PHG4Detector* PHG4OuterHcalSubsystem::GetDetector( void ) const
@@ -154,3 +151,51 @@ PHG4SteppingAction* PHG4OuterHcalSubsystem::GetSteppingAction( void ) const
     return steppingAction_;
 }
 
+void
+PHG4OuterHcalSubsystem::SetLightCorrection(const double inner_radius, const double inner_corr,const double outer_radius, const double outer_corr)
+{
+  set_double_param("light_balance_inner_corr", inner_corr);
+  set_double_param("light_balance_inner_radius", inner_radius);
+  set_double_param("light_balance_outer_corr", outer_corr);
+  set_double_param("light_balance_outer_radius", outer_radius);
+  return;
+}
+
+void
+PHG4OuterHcalSubsystem::SetDefaultParameters()
+{
+  set_default_double_param("inner_radius", 178.);
+  set_default_double_param("light_balance_inner_corr", NAN);
+  set_default_double_param("light_balance_inner_radius", NAN);
+  set_default_double_param("light_balance_outer_corr", NAN);
+  set_default_double_param("light_balance_outer_radius", NAN);
+  set_default_double_param("magnet_cutout", 12.);
+  set_default_double_param("outer_radius", 260.);
+  set_default_double_param("place_x", 0.);
+  set_default_double_param("place_y", 0.);
+  set_default_double_param("place_z", 0.);
+  set_default_double_param("rot_x", 0.);
+  set_default_double_param("rot_y", 0.);
+  set_default_double_param("rot_z", 0.);
+  set_default_double_param("scinti_eta_coverage", 1.1);
+  set_default_double_param("scinti_gap", 0.85);
+  set_default_double_param("scinti_gap_neighbor", 0.1);
+  set_default_double_param("scinti_tile_thickness", 0.7);
+  set_default_double_param("size_z", 304.91 * 2);
+  set_default_double_param("steplimits", NAN);
+  set_default_double_param("tilt_angle", NAN); // default is 4 crossinge
+
+  set_default_int_param("light_scint_model", 1);
+  set_default_int_param("magnet_cutout_first_scinti", 8); // tile start at 0, drawing tile starts at 1
+  set_default_int_param("ncross", -4);
+  set_default_int_param("n_scinti_plates", 5*64);
+  set_default_int_param("n_scinti_tiles", 12);
+
+  set_default_string_param("material", "G4_Fe");
+}
+
+PHG4TrackingAction*
+PHG4OuterHcalSubsystem::GetTrackingAction( void ) const
+{
+  return trackingAction_; 
+}

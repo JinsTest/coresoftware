@@ -3,7 +3,7 @@
 #include "PHG4EnvelopeSteppingAction.h"
 
 #include <g4main/PHG4HitContainer.h>
-#include <fun4all/getClass.h>
+#include <phool/getClass.h>
 
 #include <Geant4/globals.hh>
 
@@ -42,9 +42,9 @@ int PHG4EnvelopeSubsystem::Init( PHCompositeNode* topNode )
 		PHG4HitContainer* crystal_hits = findNode::getClass<PHG4HitContainer>(topNode, nodename.str().c_str());
 		if (!crystal_hits)
 		{
-			crystal_hits = new PHG4HitContainer();
-			PHIODataNode<PHObject> *hitNode = new PHIODataNode<PHObject>(crystal_hits, nodename.str().c_str(), "PHObject");
-			dstNode->addNode(hitNode);
+		  crystal_hits = new PHG4HitContainer(nodename.str());
+		  PHIODataNode<PHObject> *hitNode = new PHIODataNode<PHObject>(crystal_hits, nodename.str().c_str(), "PHObject");
+		  dstNode->addNode(hitNode);
 		}
 
 		// create stepping action

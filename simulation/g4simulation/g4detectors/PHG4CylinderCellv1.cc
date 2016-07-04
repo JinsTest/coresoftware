@@ -10,7 +10,7 @@ PHG4CylinderCellv1::PHG4CylinderCellv1():
   cellid(0xFFFFFFFF),
   binz(-1),
   binphi(-1),
-  edeps()
+  edeps(), showeredeps(), light_yield(0)
 {}
 
 void
@@ -23,6 +23,26 @@ PHG4CylinderCellv1::add_edep(const PHG4HitDefs::keytype g4hitid, const float ede
   else
     {
       edeps[g4hitid]+= edep;
+    }
+}
+
+void
+PHG4CylinderCellv1::add_edep(const PHG4HitDefs::keytype g4hitid, const float edep, const float ly)
+{
+  add_edep(g4hitid, edep);
+  light_yield += ly;
+}
+
+void
+PHG4CylinderCellv1::add_shower_edep(const int g4showerid, const float edep)
+{
+  if (showeredeps.find(g4showerid) == showeredeps.end())
+    {
+      showeredeps[g4showerid] = edep;
+    }
+  else
+    {
+      showeredeps[g4showerid]+= edep;
     }
 }
 

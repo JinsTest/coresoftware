@@ -13,6 +13,8 @@ pkginclude_HEADERS = \
 
 libphnodedump_la_SOURCES = \
   Dumper.cc \
+  DumpPdbParameterMap.cc \
+  DumpPHG4BlockGeomContainer.cc \
   DumpPHG4CylinderCellContainer.cc \
   DumpPHG4CylinderCellGeomContainer.cc \
   DumpPHG4CylinderGeomContainer.cc \
@@ -21,7 +23,7 @@ libphnodedump_la_SOURCES = \
   DumpPHG4InEvent.cc \
   DumpRawClusterContainer.cc \
   DumpRawTowerContainer.cc \
-  DumpRawTowerGeom.cc \
+  DumpRawTowerGeomContainer.cc \
   DumpRunHeader.cc \
   DumpSyncObject.cc \
   DumpVariableArray.cc \

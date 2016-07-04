@@ -14,21 +14,25 @@
 #include <phool/PHNodeIterator.h>
 #include <phool/PHCompositeNode.h>
 #include <phool/PHIODataNode.h>
-#include <fun4all/getClass.h>
+#include <phool/getClass.h>
 
-#include<TROOT.h>
+#include <TROOT.h>
 
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
 #include <sstream>
+#include <limits>       // std::numeric_limits
 
 using namespace std;
 
 PHG4CylinderCellReco::PHG4CylinderCellReco(const string &name) :
   SubsysReco(name),
   _timer(PHTimeServer::get()->insert_new("PHG4CylinderCellReco")),
-  chkenergyconservation(0)
+  chkenergyconservation(0),
+  tmin_default(0.0),  // ns
+  tmax_default(60.0), // ns
+  tmin_max()
 {
   memset(nbins, 0, sizeof(nbins));
 }
@@ -56,9 +60,18 @@ int PHG4CylinderCellReco::InitRun(PHCompositeNode *topNode)
   PHG4CylinderCellContainer *cells = findNode::getClass<PHG4CylinderCellContainer>(topNode , cellnodename);
   if (!cells)
     {
+      PHNodeIterator dstiter(dstNode);
+      PHCompositeNode *DetNode =
+          dynamic_cast<PHCompositeNode*>(dstiter.findFirst("PHCompositeNode",
+              detector));
+      if (!DetNode)
+        {
+          DetNode = new PHCompositeNode(detector);
+          dstNode->addNode(DetNode);
+        }
       cells = new PHG4CylinderCellContainer();
       PHIODataNode<PHObject> *newNode = new PHIODataNode<PHObject>(cells, cellnodename.c_str() , "PHObject");
-      dstNode->addNode(newNode);
+      DetNode->addNode(newNode);
     }
 
   geonodename = "CYLINDERGEOM_" + detector;
@@ -86,7 +99,7 @@ int PHG4CylinderCellReco::InitRun(PHCompositeNode *topNode)
   map<int, PHG4CylinderGeom *>::const_iterator miter;
   pair <map<int, PHG4CylinderGeom *>::const_iterator, map<int, PHG4CylinderGeom *>::const_iterator> begin_end = geo->get_begin_end();
   map<int, std::pair <double, double> >::iterator sizeiter;
-  for (miter = begin_end.first; miter != begin_end.second; miter++)
+  for (miter = begin_end.first; miter != begin_end.second; ++miter)
     {
       PHG4CylinderGeom *layergeom = miter->second;
       int layer = layergeom->get_layer();
@@ -237,8 +250,15 @@ int PHG4CylinderCellReco::InitRun(PHCompositeNode *topNode)
 	}
     }
 
+  for (std::map<int,int>::iterator iter = binning.begin(); 
+       iter != binning.end(); ++iter) {
+    int layer = iter->first;
+    // if the user doesn't set an integration window, set the default
+    tmin_max.insert(std::make_pair(layer,std::make_pair(tmin_default,tmax_default)));    
+  }
+  
   // print out settings
-  if (verbosity >= 0) {
+  if (verbosity > 0) {
     cout << "===================== PHG4CylinderCellReco::InitRun() =====================" << endl;
     cout << " " << outdetector << " Segmentation Description: " << endl;
     for (std::map<int,int>::iterator iter = binning.begin(); 
@@ -312,6 +332,10 @@ PHG4CylinderCellReco::process_event(PHCompositeNode *topNode)
         {
           for (hiter = hit_begin_end.first; hiter != hit_begin_end.second; hiter++)
             {
+              // checking ADC timing integration window cut
+              if (hiter->second->get_t(0)>tmin_max[*layer].second) continue;
+	      if (hiter->second->get_t(1)<tmin_max[*layer].first) continue;
+	      
               pair<double, double> etaphi[2];
               double phibin[2];
               double etabin[2];
@@ -442,7 +466,8 @@ PHG4CylinderCellReco::process_event(PHCompositeNode *topNode)
 		      if(verbosity > 1)
 			cout << "  add energy to existing cell " << endl;
 
-		      cellptmap.find(key)->second->add_edep(hiter->first, hiter->second->get_edep()*vdedx[i1]);
+		      cellptmap.find(key)->second->add_edep(hiter->first, hiter->second->get_edep()*vdedx[i1], hiter->second->get_light_yield()*vdedx[i1]);
+		      cellptmap.find(key)->second->add_shower_edep(hiter->second->get_shower_id(), hiter->second->get_edep()*vdedx[i1]);
 		    }
 		  else
 		    {
@@ -454,7 +479,8 @@ PHG4CylinderCellReco::process_event(PHCompositeNode *topNode)
                       it->second->set_layer(*layer);
                       it->second->set_phibin(iphibin);
                       it->second->set_etabin(ietabin);		      
-		      it->second->add_edep(hiter->first, hiter->second->get_edep()*vdedx[i1]);
+		      it->second->add_edep(hiter->first, hiter->second->get_edep()*vdedx[i1], hiter->second->get_light_yield()*vdedx[i1]);
+		      it->second->add_shower_edep(hiter->second->get_shower_id(), hiter->second->get_edep()*vdedx[i1]);
 		    }
 
 		  // just a sanity check - we don't want to mess up by having Nan's or Infs in our energy deposition
@@ -507,6 +533,10 @@ PHG4CylinderCellReco::process_event(PHCompositeNode *topNode)
 
           for (hiter = hit_begin_end.first; hiter != hit_begin_end.second; hiter++)
             {
+              // checking ADC timing integration window cut
+              if (hiter->second->get_t(0)>tmin_max[*layer].second) continue;
+	      if (hiter->second->get_t(1)<tmin_max[*layer].first) continue;
+
               double xinout[2];
               double yinout[2];
               double px[2];
@@ -586,6 +616,16 @@ PHG4CylinderCellReco::process_event(PHCompositeNode *topNode)
                 }
 
               double trklen = sqrt((ax - bx) * (ax - bx) + (ay - by) * (ay - by));
+              // if entry and exit hit are the same (seems to happen rarely), trklen = 0
+              // which leads to a 0/0 and an NaN in edep later on
+              // this code does for particles in the same cell a trklen/trklen (vdedx[ii]/trklen)
+              // so setting this to any non zero number will do just fine
+              // I just pick -1 here to flag those strange hits in case I want t oanalyze them
+              // later on
+              if (trklen == 0)
+          {
+            trklen = -1.;
+          }
               vector<int> vphi;
               vector<int> vz;
               vector<double> vdedx;
@@ -650,7 +690,16 @@ PHG4CylinderCellReco::process_event(PHCompositeNode *topNode)
 		      if(verbosity > 1)
 			cout << "  add energy to existing cell for key = " << cellptmap.find(key)->first << endl;
 
-		      cellptmap.find(key)->second->add_edep(hiter->first, hiter->second->get_edep()*vdedx[i1]);
+		      cellptmap.find(key)->second->add_edep(hiter->first, hiter->second->get_edep()*vdedx[i1], hiter->second->get_light_yield()*vdedx[i1]);
+		      cellptmap.find(key)->second->add_shower_edep(hiter->second->get_shower_id(), hiter->second->get_edep()*vdedx[i1]);
+
+		      if(verbosity > 1 && std::isnan(hiter->second->get_light_yield()*vdedx[i1]))
+            {
+
+              cout << "    NAN lighy yield with vdedx[i1] = "<<vdedx[i1]
+              <<" and hiter->second->get_light_yield() = "<<hiter->second->get_light_yield() << endl;
+
+            }
 		    }
 		  else
 		    {
@@ -662,7 +711,17 @@ PHG4CylinderCellReco::process_event(PHCompositeNode *topNode)
 		      it->second->set_layer(*layer);
                       it->second->set_phibin(iphibin);
                       it->second->set_zbin(izbin);
-		      it->second->add_edep(hiter->first, hiter->second->get_edep()*vdedx[i1]);
+		      it->second->add_edep(hiter->first, hiter->second->get_edep()*vdedx[i1], hiter->second->get_light_yield()*vdedx[i1]);
+		      it->second->add_shower_edep(hiter->second->get_shower_id(), hiter->second->get_edep()*vdedx[i1]);
+
+		      if(verbosity > 1 && std::isnan(hiter->second->get_light_yield()*vdedx[i1]))
+            {
+
+              cout << "    NAN lighy yield with vdedx[i1] = "<<vdedx[i1]
+              <<" and hiter->second->get_light_yield() = "<<hiter->second->get_light_yield() << endl;
+
+            }
+
 		    }
 		}
               vphi.clear();
@@ -945,7 +1004,7 @@ PHG4CylinderCellReco::CheckEnergy(PHCompositeNode *topNode)
     }
   PHG4CylinderCellContainer::ConstRange cell_begin_end = cells->getCylinderCells();
   PHG4CylinderCellContainer::ConstIterator citer;
-  for (citer = cell_begin_end.first; citer != cell_begin_end.second; citer++)
+  for (citer = cell_begin_end.first; citer != cell_begin_end.second; ++citer)
     {
       sum_energy_cells += citer->second->get_edep();
     }

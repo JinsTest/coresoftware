@@ -7,10 +7,10 @@
 #include <fun4all/Fun4AllReturnCodes.h>
 #include <phool/PHCompositeNode.h>
 #include <phool/PHIODataNode.h>
-#include <fun4all/getClass.h>
+#include <phool/getClass.h>
 
 // PHENIX Geant4 includes
-#include <g4cemc/RawTowerGeom.h>
+#include <g4cemc/RawTowerGeomContainer.h>
 #include <g4cemc/RawTowerContainer.h>
 #include <g4cemc/RawTower.h>
 #include <g4cemc/RawClusterContainer.h>
@@ -25,6 +25,7 @@ using namespace std;
 PHG4SvtxTrackProjection::PHG4SvtxTrackProjection(const string &name) :
   SubsysReco(name),
   _num_cal_layers(4),
+  _magfield(1.5),
   _mag_extent(156.5) // middle of Babar magent
 {
   _cal_radii.assign(_num_cal_layers,NAN);
@@ -32,6 +33,10 @@ PHG4SvtxTrackProjection::PHG4SvtxTrackProjection(const string &name) :
   _cal_names.push_back("CEMC");
   _cal_names.push_back("HCALIN");
   _cal_names.push_back("HCALOUT");
+  _cal_types.push_back(SvtxTrack::PRES); // PRES not yet in G4
+  _cal_types.push_back(SvtxTrack::CEMC);
+  _cal_types.push_back(SvtxTrack::HCALIN);
+  _cal_types.push_back(SvtxTrack::HCALOUT);
 }
 
 int PHG4SvtxTrackProjection::Init(PHCompositeNode *topNode) 
@@ -43,15 +48,14 @@ int PHG4SvtxTrackProjection::InitRun(PHCompositeNode *topNode)
 {
   for (int i=0; i<_num_cal_layers; ++i) {
     string nodename = "TOWERGEOM_" + _cal_names[i];
-    RawTowerGeom *geo = findNode::getClass<RawTowerGeom>(topNode,nodename.c_str());
+    RawTowerGeomContainer *geo = findNode::getClass<RawTowerGeomContainer>(topNode,nodename.c_str());
     if (geo) _cal_radii[i] = geo->get_radius();
   }
   
-  if (verbosity >= 0) {
+  if (verbosity > 0) {
     cout << "================== PHG4SvtxTrackProjection::InitRun() =====================" << endl;
-    cout << " CVS Version: $Id: PHG4SvtxTrackProjection.C,v 1.10 2015/04/21 23:47:10 pinkenbu Exp $" << endl;
     for (int i=0;i<_num_cal_layers;++i) {
-      if (!isnan(_cal_radii[i])) {
+      if (!std::isnan(_cal_radii[i])) {
 	cout << " " << _cal_names[i] << " projection radius: " << _cal_radii[i] << " cm" << endl;
       }
     }
@@ -81,20 +85,20 @@ int PHG4SvtxTrackProjection::process_event(PHCompositeNode *topNode)
 
   for (int i=0;i<_num_cal_layers;++i) {
 
-    if (isnan(_cal_radii[i])) continue;
+    if (std::isnan(_cal_radii[i])) continue;
 
     if (verbosity > 1) cout << "Projecting tracks into: " << _cal_names[i] << endl;
 
     // pull the tower geometry
     string towergeonodename = "TOWERGEOM_" + _cal_names[i];
-    RawTowerGeom *towergeo = findNode::getClass<RawTowerGeom>(topNode,towergeonodename.c_str());
+    RawTowerGeomContainer *towergeo = findNode::getClass<RawTowerGeomContainer>(topNode,towergeonodename.c_str());
     if (!towergeo) {
       cerr << PHWHERE << " ERROR: Can't find node " << towergeonodename << endl;
       return Fun4AllReturnCodes::ABORTRUN;
     }
 
     // pull the towers
-    string towernodename = "TOWER_" + _cal_names[i];
+    string towernodename = "TOWER_CALIB_" + _cal_names[i];
     RawTowerContainer *towerList = findNode::getClass<RawTowerContainer>(topNode,towernodename.c_str());
     if (!towerList) {
       cerr << PHWHERE << " ERROR: Can't find node " << towernodename << endl;
@@ -113,13 +117,12 @@ int PHG4SvtxTrackProjection::process_event(PHCompositeNode *topNode)
     for (SvtxTrackMap::Iter iter = _g4tracks->begin();
 	 iter != _g4tracks->end();
 	 ++iter) {
-      SvtxTrack *track = &iter->second;
+      SvtxTrack *track = iter->second;
 
-      if (verbosity > 1) cout << "projecting track id " << track->getTrackID() << endl;
+      if (verbosity > 1) cout << "projecting track id " << track->get_id() << endl;
 
       if (verbosity > 1) {
-	cout << " track pt = " << sqrt(pow(track->get3Momentum(0),2) +
-				       pow(track->get3Momentum(1),2)) << endl;
+	cout << " track pt = " << track->get_pt() << endl;
       }
 
       // curved tracks inside mag field
@@ -128,24 +131,25 @@ int PHG4SvtxTrackProjection::process_event(PHCompositeNode *topNode)
       point.assign(3,-9999.);
       //if (_cal_radii[i] < _mag_extent) {
       // curved projections inside field
-      _hough.projectToRadius(*track,_cal_radii[i],point);
 
-      if (isnan(point[0])) continue;
-      if (isnan(point[1])) continue;
-      if (isnan(point[2])) continue;
+      _hough.projectToRadius(track,_magfield,_cal_radii[i],point);
+
+      if (std::isnan(point[0])) continue;
+      if (std::isnan(point[1])) continue;
+      if (std::isnan(point[2])) continue;
       // } else {
       // 	// straight line projections after mag field exit
       // 	_hough.projectToRadius(track,_mag_extent-0.05,point);
-      // 	if (isnan(point[0])) continue;
-      // 	if (isnan(point[1])) continue;
-      // 	if (isnan(point[2])) continue;
+      // 	if (std::isnan(point[0])) continue;
+      // 	if (std::isnan(point[1])) continue;
+      // 	if (std::isnan(point[2])) continue;
 
       // 	std::vector<double> point2;
       // 	point2.assign(3,-9999.);
       // 	_hough.projectToRadius(track,_mag_extent+0.05,point2);
-      // 	if (isnan(point2[0])) continue;
-      // 	if (isnan(point2[1])) continue;
-      // 	if (isnan(point2[2])) continue;
+      // 	if (std::isnan(point2[0])) continue;
+      // 	if (std::isnan(point2[1])) continue;
+      // 	if (std::isnan(point2[2])) continue;
 
       // 	// find intersection of r and z
 
@@ -160,23 +164,24 @@ int PHG4SvtxTrackProjection::process_event(PHCompositeNode *topNode)
       double eta = asinh(z/sqrt(x*x+y*y));
 
       if (verbosity > 1) {
-	cout << " initial track phi = " << atan2(track->get3Momentum(1),track->get3Momentum(0));
-	cout << ", eta = " << asinh(track->get3Momentum(2)/sqrt(pow(track->get3Momentum(0),2)+pow(track->get3Momentum(1),2))) << endl;
+	cout << " initial track phi = " << track->get_phi();
+	cout << ", eta = " << track->get_eta() << endl;
 	cout << " calorimeter phi = " << phi << ", eta = " << eta << endl;
       }
 
       // projection is outside the detector extent
       // \todo towergeo doesn't make this easy to extract, but this should be
       // fetched from the node tree instead of hardcoded
-      if (fabs(eta) >= 1.1) continue;
+      if (fabs(eta) >= 1.0) continue;
 
       // calculate 3x3 tower energy
       int binphi = towergeo->get_phibin(phi);
       int bineta = towergeo->get_etabin(eta);
 
       double energy_3x3 = 0.0;
-      for (int iphi = binphi-1; iphi < binphi+2; ++iphi) { 
-      	for (int ieta = bineta-1; ieta < bineta+2; ++ieta) { 
+      double energy_5x5 = 0.0;
+      for (int iphi = binphi-2; iphi <= binphi+2; ++iphi) {
+      	for (int ieta = bineta-2; ieta <= bineta+2; ++ieta) {
 
 	  // wrap around
 	  int wrapphi = iphi;
@@ -193,14 +198,18 @@ int PHG4SvtxTrackProjection::process_event(PHCompositeNode *topNode)
 
 	  RawTower* tower = towerList->getTower(ieta,wrapphi);
 	  if (tower) {
-	    energy_3x3 += tower->get_energy();
+
+        energy_5x5 += tower->get_energy();
+	      if (abs(iphi - binphi)<=1 and abs(ieta - bineta)<=1 )
+	        energy_3x3 += tower->get_energy();
 
 	    if (verbosity > 1) cout << " tower " << ieta << " " << wrapphi << " energy = " << tower->get_energy() << endl;
 	  }
       	}
       }
 
-      track->set_cal_energy_3x3(i,energy_3x3);
+      track->set_cal_energy_3x3(_cal_types[i],energy_3x3);
+      track->set_cal_energy_5x5(_cal_types[i],energy_5x5);
 
       // loop over all clusters and find nearest
       double min_r = DBL_MAX;
@@ -226,10 +235,10 @@ int PHG4SvtxTrackProjection::process_event(PHCompositeNode *topNode)
       }
 
       if (min_index != -9999) {
-	track->set_cal_dphi(i,min_dphi);
-	track->set_cal_deta(i,min_deta);
-	track->set_cal_cluster_id(i,min_index);
-	track->set_cal_cluster_e(i,min_e);
+	track->set_cal_dphi(_cal_types[i],min_dphi);
+	track->set_cal_deta(_cal_types[i],min_deta);
+	track->set_cal_cluster_id(_cal_types[i],min_index);
+	track->set_cal_cluster_e(_cal_types[i],min_e);
 
 	if (verbosity > 1) {
 	  cout << " nearest cluster dphi = " << min_dphi << " deta = " << min_deta << " e = " << min_e << endl;

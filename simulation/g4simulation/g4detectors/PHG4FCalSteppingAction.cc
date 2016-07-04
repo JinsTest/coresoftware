@@ -3,9 +3,10 @@
 #include <g4main/PHG4HitContainer.h>
 #include <g4main/PHG4Hit.h>
 #include <g4main/PHG4Hitv1.h>
+#include <g4main/PHG4Shower.h>
 #include <g4main/PHG4TrackUserInfoV1.h>
 
-#include <fun4all/getClass.h>
+#include <phool/getClass.h>
 
 #include <Geant4/G4Step.hh>
 #include <Geant4/G4SystemOfUnits.hh>
@@ -65,6 +66,29 @@ void PHG4FCalSteppingAction::UserSteppingAction( const G4Step* aStep)
     PHG4TrackUserInfoV1* pv = new PHG4TrackUserInfoV1();
     pv->SetWanted(true);
     aTrack->SetUserInformation(pv);
+  }
+
+  //set the track ID
+  {
+    hit->set_trkid(aTrack->GetTrackID());
+    if ( G4VUserTrackInformation* p = aTrack->GetUserInformation() )
+      {
+	if ( PHG4TrackUserInfoV1* pp = dynamic_cast<PHG4TrackUserInfoV1*>(p) )
+	  {
+	    mhit->set_trkid(pp->GetUserTrackId());
+	    mhit->set_shower_id(pp->GetShower()->get_id());
+	  }
+      }
+  }
+
+  {
+    if ( G4VUserTrackInformation* p = aTrack->GetUserInformation() )
+      {
+	if ( PHG4TrackUserInfoV1* pp = dynamic_cast<PHG4TrackUserInfoV1*>(p) )
+	  {
+	    pp->GetShower()->add_g4hit_id(hits_->GetID(),mhit->get_hit_id());
+	  }
+      }
   }
   
 }
