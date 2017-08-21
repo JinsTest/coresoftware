@@ -4,12 +4,16 @@
 #include <cstdlib>
 #include <iostream>
 
-ClassImp(RawClusterContainer)
-
 using namespace std;
 
 RawClusterContainer::ConstRange
 RawClusterContainer::getClusters( void ) const
+{
+  return make_pair(_clusters.begin(), _clusters.end());
+}
+
+RawClusterContainer::Range
+RawClusterContainer::getClusters( void )
 {
   return make_pair(_clusters.begin(), _clusters.end());
 }

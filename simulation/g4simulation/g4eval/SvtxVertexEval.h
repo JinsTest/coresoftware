@@ -1,33 +1,47 @@
-
-#ifndef __SVTXVERTEXEVAL_H__
-#define __SVTXVERTEXEVAL_H__
+#ifndef SVTXVERTEXEVAL_H__
+#define SVTXVERTEXEVAL_H__
 
 #include "SvtxTrackEval.h"
-#include "SvtxClusterEval.h"
-#include "SvtxHitEval.h"
-
-#include <phool/PHCompositeNode.h>
-#include <g4hough/SvtxVertex.h>
-#include <g4main/PHG4Hit.h>
-#include <g4main/PHG4Particle.h>
-#include <g4main/PHG4VtxPoint.h>
 
 #include <set>
 #include <map>
+
+class PHCompositeNode;
+
+class PHG4Particle;
+class PHG4TruthInfoContainer;
+class PHG4VtxPoint;
+
+class SvtxTrackMap;
+class SvtxVertex;
+class SvtxVertexMap;
 
 class SvtxVertexEval {
 
 public:
 
   SvtxVertexEval(PHCompositeNode *topNode);
-  virtual ~SvtxVertexEval() {}
+  virtual ~SvtxVertexEval();
 
   void next_event(PHCompositeNode *topNode);
+  void do_caching(bool do_cache) {
+    _do_cache = do_cache;
+    _trackeval.do_caching(do_cache);
+  }
+  void set_strict(bool strict) {
+    _strict = strict;
+    _trackeval.set_strict(strict);
+  }
+  void set_verbosity(int verbosity) {
+    _verbosity = verbosity;
+    _trackeval.set_verbosity(verbosity);
+  }
   
   // access the sub evals (and the cached values)
   SvtxTrackEval*   get_track_eval() {return &_trackeval;}
   SvtxClusterEval* get_cluster_eval() {return _trackeval.get_cluster_eval();}
   SvtxHitEval*     get_hit_eval() {return _trackeval.get_hit_eval();}
+  SvtxTruthEval* get_truth_eval() {return _trackeval.get_truth_eval();}
   
   // backtrace through to PHG4Hits
   std::set<PHG4Particle*>  all_truth_particles (SvtxVertex* vertex);
@@ -42,10 +56,22 @@ public:
   
   // overlap calculations
   unsigned int get_ntracks_contribution(SvtxVertex* svtxvertex, PHG4VtxPoint* truthpoint);  
+
+  unsigned int get_errors() {return _errors + _trackeval.get_errors();}
   
 private:
-  PHCompositeNode* _topNode;
+
+  void get_node_pointers(PHCompositeNode* topNode);
+  bool has_node_pointers();
+  
   SvtxTrackEval _trackeval;
+  SvtxVertexMap* _vertexmap;
+  SvtxTrackMap* _trackmap;
+  PHG4TruthInfoContainer* _truthinfo;
+
+  bool _strict;
+  int _verbosity;
+  unsigned int _errors;
 
   bool _do_cache;
   std::map<SvtxVertex*,std::set<PHG4Particle*> >               _cache_all_truth_particles;
@@ -56,4 +82,4 @@ private:
   std::map<std::pair<SvtxVertex*,PHG4VtxPoint*>, unsigned int> _cache_get_ntracks_contribution;
 };
 
-#endif // __SVTXVERTEXEVAL_H__
+#endif // SVTXVERTEXEVAL_H__

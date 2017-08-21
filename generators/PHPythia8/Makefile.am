@@ -5,36 +5,39 @@ AM_CPPFLAGS = \
   -I$(OFFLINE_MAIN)/include \
   -I`root-config --incdir` 
 
-AM_LDFLAGS = \
-  -L$(libdir) \
-  -L$(OFFLINE_MAIN)/lib 
-
-AM_CXXFLAGS = -Wall -Werror
+AM_CXXFLAGS = -Werror
 
 lib_LTLIBRARIES = libPHPythia8.la 
 
-include_HEADERS = \
+pkginclude_HEADERS = \
   PHPythia8.h \
   PHPy8GenTrigger.h \
-  PHPy8ParticleTrigger.h 
+  PHPy8ParticleTrigger.h \
+  PHPy8JetTrigger.h 
 
 libPHPythia8_la_LDFLAGS = \
-  ${AM_LDFLAGS} \
+  -L$(libdir) \
+  -L$(OFFLINE_MAIN)/lib \
   `root-config --libs`
 
 libPHPythia8_la_LIBADD = \
+  -lgsl \
+  -lgslcblas \
   -lphool \
   -lSubsysReco \
   -lfun4all \
   -lboost_iostreams \
   -lpythia8 \
   -lphhepmc \
-  -lHepMC
+  -lHepMC \
+  -lfastjet \
+  -lCGAL
 
 libPHPythia8_la_SOURCES = \
   PHPythia8.C \
   PHPy8GenTrigger.C \
   PHPy8ParticleTrigger.C \
+  PHPy8JetTrigger.C \
   PHPythia8_Dict.C
 
 BUILT_SOURCES = \
@@ -57,8 +60,9 @@ PHPythia8_Dict.C: \
   PHPythia8.h \
   PHPy8GenTrigger.h \
   PHPy8ParticleTrigger.h \
+  PHPy8JetTrigger.h \
   PHPythia8LinkDef.h
-	rootcint -f $@ -c $(DEFAULT_INCLUDES) $(AM_CPPFLAGS) $^
+	rootcint -f $@ @CINTDEFS@ -c $(DEFAULT_INCLUDES) $(AM_CPPFLAGS) $^
 
 clean-local:
 	rm -f *Dict*

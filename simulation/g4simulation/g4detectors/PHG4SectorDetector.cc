@@ -5,7 +5,7 @@
 
 #include <phool/PHCompositeNode.h>
 #include <phool/PHIODataNode.h>
-#include <fun4all/getClass.h>
+#include <phool/getClass.h>
 
 #include <Geant4/G4Material.hh>
 #include <Geant4/G4Cons.hh>
@@ -25,7 +25,7 @@ using namespace PHG4Sector;
 //note this inactive thickness is ~1.5% of a radiation length
 PHG4SectorDetector::PHG4SectorDetector(PHCompositeNode *Node,
     const std::string &dnam) :
-    PHG4Detector(Node, dnam), PHG4SectorConstructor(dnam), _region(NULL)
+  PHG4Detector(Node, dnam), PHG4SectorConstructor(dnam), _region(NULL)
 {
 }
 
@@ -35,7 +35,7 @@ bool
 PHG4SectorDetector::IsInSectorActive(G4VPhysicalVolume * volume)
 {
   for (map_phy_vol_t::const_iterator it = map_active_phy_vol.begin();
-      it != map_active_phy_vol.end(); it++)
+      it != map_active_phy_vol.end(); ++it)
     {
       if (volume == (*it).second)
         {
@@ -76,7 +76,7 @@ PHG4SectorDetector::Construct(G4LogicalVolume* logicWorld)
 
 
   for (map_log_vol_t::iterator it = map_log_vol.begin(); it != map_log_vol.end();
-      it++)
+      ++it)
     {
       if ((*it).first != G4String(name_base + "_Log"))
         {

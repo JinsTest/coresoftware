@@ -3,29 +3,26 @@
 
 #include "PHG4EventAction.h"
 
-#include <phool/PHCompositeNode.h>
-
 #include <Geant4/G4ThreeVector.hh>
 #include <Geant4/globals.hh>
 
-#include <boost/bimap.hpp>
-
 #include <set>
+#include <map>
 
+class PHG4HitContainer;
 class PHG4TruthInfoContainer;
+class PHCompositeNode;
 
 class PHG4TruthEventAction: public PHG4EventAction
 {
 
 public:
-  typedef boost::bimap<int,G4ThreeVector> bimap_type;
 
   //! constructor
   PHG4TruthEventAction( void );
 
   //! destuctor
-  virtual ~PHG4TruthEventAction( void )
-  {}
+  virtual ~PHG4TruthEventAction( void ) {}
 
   void BeginOfEventAction(const G4Event*);
 
@@ -39,27 +36,22 @@ public:
   //! add id into track list
   void AddTrackidToWritelist( const G4int trackid);
 
-  void TrackIdOffset(const int i) {trackidoffset = i;}
-
-
-  bimap_type::iterator AddVertex(G4ThreeVector& v);
-  
  private:
-  
+
+  void SearchNode(PHCompositeNode* topNode);
+  void PruneShowers();
+  void ProcessShowers();
   
   //! set of track ids to be written out
-
   std::set<G4int> writeList_;
 
   //! pointer to truth information container
   PHG4TruthInfoContainer* truthInfoList_;
-
-  int trackidoffset;
   
-  // TESTING
-  // Bidirectional map of vertexid <-> vertex position
-  int vertexid_;
-  bimap_type vertexIdMap_;  
+  int prev_existing_lower_key;
+  int prev_existing_upper_key;
+
+  std::map<int,PHG4HitContainer*> hitmap_;
 };
 
 

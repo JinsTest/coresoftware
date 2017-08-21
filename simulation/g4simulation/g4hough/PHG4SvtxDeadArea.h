@@ -4,10 +4,14 @@
 #include <fun4all/SubsysReco.h>
 #include <phool/PHTimeServer.h>
 
+// rootcint barfs with this header so we need to hide it
+#ifndef __CINT__
+#include <gsl/gsl_rng.h>
+#endif
+
 #include <map>
 
 class SvtxHitMap;
-class TRandom3;
 
 class PHG4SvtxDeadArea : public SubsysReco {
 
@@ -16,17 +20,11 @@ public:
   PHG4SvtxDeadArea(const std::string &name = "PHG4SvtxDeadArea");
   virtual ~PHG4SvtxDeadArea();
   
-  //! module initialization
-  int Init(PHCompositeNode *topNode){return 0;}
-  
   //! run initialization
   int InitRun(PHCompositeNode *topNode);
   
     //! event processing
   int process_event(PHCompositeNode *topNode);
-  
-  //! end of process
-  int End(PHCompositeNode *topNode);
   
   //! kill random hits in this layer with fractional eff efficiency
   void set_hit_efficiency(const int ilayer, const float eff) {
@@ -39,17 +37,20 @@ public:
 
  private:
 
-  void FillCylinderDeadAreaMap(PHCompositeNode *topNode);
-  void FillLadderDeadAreaMap(PHCompositeNode *topNode);
+  void GenericFillDeadAreaMap(PHCompositeNode *topNode, const std::string &detectorname);
 
   // settings
   std::map<int,float> _eff_by_layer;
 
   // storage
   SvtxHitMap* _hits;
-  TRandom3* _rand;
 
   PHTimeServer::timer _timer;   ///< Timer
+
+#ifndef __CINT__
+  gsl_rng *RandomGenerator;
+#endif
+
 };
 
 #endif

@@ -11,18 +11,19 @@
 // need for it.  Pass in a pointer to a random generator, algorithm
 // selection and an event.
 
-#include <set>
-#include <cmath>
+#include "flowAfterburner.h"
 
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_roots.h>
      
-#include "HepMC/GenEvent.h"
-#include "HepMC/GenRanges.h"
-#include "CLHEP/Random/RandFlat.h"
-#include "CLHEP/Vector/LorentzVector.h"
-#include "flowAfterburner.h"
+#include <HepMC/GenEvent.h>
+#include <HepMC/GenRanges.h>
+#include <CLHEP/Random/RandFlat.h>
+#include <CLHEP/Vector/LorentzVector.h>
+
+#include <set>
+#include <cmath>
 
 flowAfterburnerAlgorithm algorithm;
 std::map<std::string, flowAfterburnerAlgorithm> algorithms;
@@ -42,7 +43,6 @@ struct loaderObj
 
 loaderObj loader;
 
-float psi_n[6],v1,v2,v3,v4,v5,v6;
 
 double
 vn_func (double x, void *params)
@@ -76,6 +76,8 @@ vn_func_derivative (double x, void *params)
 	     vn[5] * cos (6 * (x - psi_n[5])) / 6.0);
   return val;
 }
+
+float psi_n[6],v1,v2,v3,v4,v5,v6;
 
 void
 MoveDescendantsToParent (HepMC::GenParticle * parent,
@@ -179,11 +181,8 @@ jjia_minbias_new_v2only (double b, double eta, double pt)
 
 // Custom vn 
 void
-custom_vn (double b, double eta, double pt)
+custom_vn (double /*b*/, double /*eta*/, double /*pt*/)
 {
-  b = b;
-  eta = eta;
-  pt = pt;			// to avoid compiler warnings
   v1 = 0.0000;
   v2 = 0.0500;
   v3 = 0.0280;

@@ -28,7 +28,11 @@ PHG4FPbScDetector::PHG4FPbScDetector( PHCompositeNode *Node, const std::string &
   x_position(0.0 * cm),
   y_position(0.0 * cm),
   z_position(400.0 * cm),
-  layer_separation(0.0)
+  layer_separation(0.0),
+  AbsorberMaterial(NULL),
+  ScintillatorMaterial(NULL),
+  stepping_action(NULL),
+  _region(NULL)
 {
   
 }
@@ -160,7 +164,7 @@ bool PHG4FPbScDetector::isInScintillator(G4VPhysicalVolume * volume)
 {
   //loop over the physical volumes and see if this is a match
   std::map<unsigned int, G4VPhysicalVolume*>::iterator vol_iter = scintillator_physi_.begin();
-  for ( ; vol_iter != scintillator_physi_.end(); vol_iter ++ )
+  for ( ; vol_iter != scintillator_physi_.end(); ++vol_iter )
   {
     if ( vol_iter->second == volume )
       {
@@ -175,7 +179,7 @@ int PHG4FPbScDetector::getScintillatorLayer(G4VPhysicalVolume * volume)
 {
   //loop over the physical volumes and see if this is a match
   std::map<unsigned int, G4VPhysicalVolume*>::iterator vol_iter = scintillator_physi_.begin();
-  for ( ; vol_iter != scintillator_physi_.end(); vol_iter ++ )
+  for ( ; vol_iter != scintillator_physi_.end(); ++vol_iter )
   {
     if ( vol_iter->second == volume )
       return vol_iter->first;

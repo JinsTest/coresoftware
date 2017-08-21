@@ -7,8 +7,8 @@
 #include <phool/PHCompositeNode.h>
 #include <phool/PHIODataNode.h>
 #include <phool/PHNodeIterator.h>
-#include <fun4all/getClass.h>
-#include <fun4all/recoConsts.h>
+#include <phool/getClass.h>
+#include <phool/recoConsts.h>
 
 #include <TPrincipal.h>
 
@@ -65,9 +65,8 @@ int PHG4SvtxBeamSpotReco::InitRun(PHCompositeNode* topNode) {
     return Fun4AllReturnCodes::ABORTEVENT;
   }
   
-  if (verbosity >= 0) {
+  if (verbosity > 0) {
     cout << "=================== PHG4SvtxBeamSpotReco::InitRun() =======================" << endl;
-    cout << " CVS Version: $Id: PHG4SvtxBeamSpotReco.C,v 1.5 2015/04/21 23:47:09 pinkenbu Exp $" << endl;
     cout << " Storing cumulative beam spot location under PAR/SVTX/SvtxBeamSpot" << endl;
     cout << "===========================================================================" << endl;
   }
@@ -84,9 +83,10 @@ int PHG4SvtxBeamSpotReco::process_event(PHCompositeNode *topNode)
   for (SvtxVertexMap::ConstIter iter = _vertexes->begin();
        iter != _vertexes->end();
        ++iter) {
-    const SvtxVertex* vertex = &iter->second;
-    double data[2] = {vertex->get_x(),vertex->get_y()};
-    _pca.AddRow(data);
+    const SvtxVertex* vertex = iter->second;
+    Double_t data[2] = {vertex->get_x(),vertex->get_y()};
+    Double_t* pdata = &data[0];
+    _pca.AddRow(pdata);
   }
 
   // recalculate beam spot x,y
@@ -110,7 +110,7 @@ int PHG4SvtxBeamSpotReco::process_event(PHCompositeNode *topNode)
 
 int PHG4SvtxBeamSpotReco::End(PHCompositeNode* topNode) {
 
-  if (verbosity >= 0) {
+  if (verbosity > 0) {
     cout << "=================== PHG4SvtxBeamSpotReco::End() ===========================" << endl;
     _beamspot->identify();
     cout << "===========================================================================" << endl;

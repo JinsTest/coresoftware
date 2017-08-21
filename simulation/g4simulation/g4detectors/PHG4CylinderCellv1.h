@@ -16,9 +16,15 @@ class PHG4CylinderCellv1 : public PHG4CylinderCell
 
   void identify(std::ostream& os = std::cout) const;
 
-   EdepConstRange get_g4hits()
-    {return make_pair(edeps.begin(), edeps.end());}
+  EdepConstRange get_g4hits()
+  {return std::make_pair(edeps.begin(), edeps.end());}
   void add_edep(const PHG4HitDefs::keytype g4hitid, const float edep);
+  void add_edep(const PHG4HitDefs::keytype g4hitid, const float edep, const float light_yield);
+  
+  ShowerEdepConstRange get_g4showers()
+  {return std::make_pair(showeredeps.begin(), showeredeps.end());}
+  void add_shower_edep(const int g4showerid, const float edep);
+  
   void set_cell_id(const PHG4CylinderCellDefs::keytype id) {cellid = id;}
   void set_layer(const unsigned int i) {layer = i;}
   double get_edep() const;
@@ -27,10 +33,13 @@ class PHG4CylinderCellv1 : public PHG4CylinderCell
   int get_binz() const {return binz;}
   int get_binphi() const {return binphi;}
   int get_bineta() const {return get_binz();}
+  float get_light_yield() const  {return light_yield;}
+
 
   void set_zbin(const int i) {binz = i;}
   void set_etabin(const int i) {set_zbin(i);}
   void set_phibin(const int i) {binphi = i;}
+  void set_light_yield(const float lightYield)  {    light_yield = lightYield;  }
 
  protected:
 
@@ -39,8 +48,10 @@ class PHG4CylinderCellv1 : public PHG4CylinderCell
   int binz;
   int binphi;
   EdepMap edeps;
+  ShowerEdepMap showeredeps;
+  float light_yield;
    
-  ClassDef(PHG4CylinderCellv1,1)
+  ClassDef(PHG4CylinderCellv1,2)
 };
 
 #endif

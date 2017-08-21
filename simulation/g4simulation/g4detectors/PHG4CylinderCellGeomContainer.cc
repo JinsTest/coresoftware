@@ -2,8 +2,6 @@
 #include "PHG4CylinderCellGeom.h"
 #include <cmath>
 
-ClassImp(PHG4CylinderCellGeomContainer)
-
 using namespace std;
 
 PHG4CylinderCellGeomContainer::PHG4CylinderCellGeomContainer()
@@ -25,7 +23,7 @@ void
 PHG4CylinderCellGeomContainer::identify(std::ostream& os) const
 {
   map<int,PHG4CylinderCellGeom *>::const_iterator iter;
-  for (iter=layergeoms.begin(); iter != layergeoms.end(); iter++)
+  for (iter=layergeoms.begin(); iter != layergeoms.end(); ++iter)
     {
       cout << "layer " << iter->first << endl;
       (iter->second)->identify(os);
@@ -68,6 +66,16 @@ PHG4CylinderCellGeomContainer::GetLayerCellGeom(const int i)
       return iter->second;
     }
   cout << "Could not locate layer " << i << " in PHG4CylinderCellGeomContainer" << endl;
-  return NULL;
+  return nullptr;
+}
+
+PHG4CylinderCellGeom *
+PHG4CylinderCellGeomContainer::GetFirstLayerCellGeom()
+{
+  if (layergeoms.empty())
+    {
+      return nullptr;
+    }
+  return layergeoms.begin()->second;
 }
 

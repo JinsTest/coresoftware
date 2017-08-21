@@ -1,29 +1,49 @@
-
-#ifndef __SVTXCLUSTEREVAL_H__
-#define __SVTXCLUSTEREVAL_H__
+#ifndef SVTXCLUSTEREVAL_H__
+#define SVTXCLUSTEREVAL_H__
 
 #include "SvtxHitEval.h"
 
-#include <phool/PHCompositeNode.h>
-#include <g4hough/SvtxCluster.h>
-#include <g4main/PHG4Hit.h>
-#include <g4main/PHG4Particle.h>
-
 #include <set>
 #include <map>
+
+class PHCompositeNode;
+
+class PHG4Hit;
+class PHG4Particle;
+class PHG4TruthInfoContainer;
+
+class SvtxCluster;
+class SvtxClusterMap;
+class SvtxHitMap;
+class SvtxTruthEval;
+
+using namespace std;
+typedef multimap<float, SvtxCluster*> innerMap;
 
 class SvtxClusterEval {
 
 public:
 
   SvtxClusterEval(PHCompositeNode *topNode);
-  virtual ~SvtxClusterEval() {}
+  virtual ~SvtxClusterEval();
 
   void next_event(PHCompositeNode *topNode);
-  void do_caching(bool do_cache) {_do_cache = do_cache;}
+  void do_caching(bool do_cache) {
+    _do_cache = do_cache;
+    _hiteval.do_caching(do_cache);
+  }
+  void set_strict(bool strict) {
+    _strict = strict;
+    _hiteval.set_strict(strict);
+  }
+  void set_verbosity(int verbosity) {
+    _verbosity = verbosity;
+    _hiteval.set_verbosity(verbosity);
+  }
   
   // access the clustereval (and its cached values)
   SvtxHitEval* get_hit_eval() {return &_hiteval;}
+  SvtxTruthEval* get_truth_eval() {return _hiteval.get_truth_eval();}
   
   // backtrace through to PHG4Hits
   std::set<PHG4Hit*> all_truth_hits          (SvtxCluster* cluster);
@@ -41,11 +61,25 @@ public:
   // overlap calculations
   float get_energy_contribution (SvtxCluster* svtxcluster, PHG4Particle* truthparticle);
   float get_energy_contribution (SvtxCluster* svtxcluster, PHG4Hit* truthhit);
+
+  unsigned int get_errors() {return _errors + _hiteval.get_errors();}
   
 private:
-  PHCompositeNode* _topNode;
-  SvtxHitEval _hiteval;
 
+  void get_node_pointers(PHCompositeNode* topNode);
+  void fill_cluster_layer_map();
+  //  void fill_g4hit_layer_map();
+  bool has_node_pointers();
+  
+  SvtxHitEval _hiteval;
+  SvtxClusterMap* _clustermap;
+  SvtxHitMap* _hitmap;
+  PHG4TruthInfoContainer* _truthinfo;
+
+  bool _strict;
+  int _verbosity;
+  unsigned int _errors;
+  
   bool                                                  _do_cache;
   std::map<SvtxCluster*,std::set<PHG4Hit*> >            _cache_all_truth_hits;
   std::map<SvtxCluster*,PHG4Hit*>                       _cache_max_truth_hit_by_energy;
@@ -56,6 +90,9 @@ private:
   std::map<PHG4Hit*,SvtxCluster* >                      _cache_best_cluster_from_g4hit;
   std::map<std::pair<SvtxCluster*,PHG4Particle*>,float> _cache_get_energy_contribution_g4particle;
   std::map<std::pair<SvtxCluster*,PHG4Hit*>,float>      _cache_get_energy_contribution_g4hit;
+
+  std::multimap<unsigned int, innerMap> _clusters_per_layer;
+  std::multimap<unsigned int, PHG4Hit*> _g4hits_per_layer;
 };
 
-#endif // __SVTXCLUSTEREVAL_H__
+#endif // SVTXCLUSTEREVAL_H__

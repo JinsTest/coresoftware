@@ -1,48 +1,76 @@
 AUTOMAKE_OPTIONS = foreign
 
-INCLUDES = \
+AM_CPPFLAGS = \
   -I$(includedir) \
   -I$(OFFLINE_MAIN)/include/eigen3 \
   -I$(OFFLINE_MAIN)/include \
   -I$(G4_MAIN)/include \
-  -I$(G4_MAIN)/include/Geant4 \
   -I`root-config --incdir`
 
 lib_LTLIBRARIES = \
    libg4eval.la
 
-AM_CXXFLAGS = -Wall -Werror -msse2
+AM_CXXFLAGS = -Werror -msse2
 
 libg4eval_la_LDFLAGS = \
   -L$(libdir) \
-  -L$(OFFLINE_MAIN)/lib \
-  `geant4-config --libs` \
+  -L$(OFFLINE_MAIN)/lib
+
+libg4eval_la_LIBADD = \
   -lfun4all \
-  -lg4hough \
-  -lHelixHough \
-  -lFitNewton \
-  -lcemc 
+  -lphg4hit \
+  -lg4detectors_io \
+  -lg4hough_io \
+  -lcemc_io \
+  -lg4jets_io
 
 pkginclude_HEADERS = \
-  PHG4Evaluator.h \
-  PHG4CalEvaluator.h \
-  PHG4DSTReader.h \
+  BaseTruthEval.h \
+  CaloEvalStack.h \
+  CaloTruthEval.h \
+  CaloRawTowerEval.h \
+  CaloRawClusterEval.h \
+  CaloEvaluator.h \
+  JetEvalStack.h \
+  JetTruthEval.h \
+  JetRecoEval.h \
+  JetEvaluator.h \
+  SvtxEvalStack.h \
   SvtxTruthEval.h \
   SvtxHitEval.h \
   SvtxClusterEval.h \
   SvtxTrackEval.h \
   SvtxVertexEval.h \
-  SvtxEvaluator.h
+  SvtxEvaluator.h \
+  MomentumEvaluator.h \
+  PHG4DstCompressReco.h
 
 #pkginclude_HEADERS = $(include_HEADERS)
 
 libg4eval_la_SOURCES = \
-  PHG4Evaluator.C \
-  PHG4Evaluator_Dict.C \
-  PHG4CalEvaluator.C \
-  PHG4CalEvaluator_Dict.C \
+  BaseTruthEval.C \
+  CaloEvalStack.C \
+  CaloEvalStack_Dict.C \
+  CaloTruthEval.C \
+  CaloTruthEval_Dict.C \
+  CaloRawTowerEval.C \
+  CaloRawTowerEval_Dict.C \
+  CaloRawClusterEval.C \
+  CaloRawClusterEval_Dict.C \
+  CaloEvaluator.C \
+  CaloEvaluator_Dict.C \
+  JetEvalStack.C \
+  JetEvalStack_Dict.C \
+  JetTruthEval.C \
+  JetTruthEval_Dict.C \
+  JetRecoEval.C \
+  JetRecoEval_Dict.C \
+  JetEvaluator.C \
+  JetEvaluator_Dict.C \
   PHG4DSTReader.cc \
   PHG4DSTReader_Dict.C \
+  SvtxEvalStack.C \
+  SvtxEvalStack_Dict.C \
   SvtxTruthEval.C \
   SvtxTruthEval_Dict.C \
   SvtxHitEval.C \
@@ -54,14 +82,15 @@ libg4eval_la_SOURCES = \
   SvtxVertexEval.C \
   SvtxVertexEval_Dict.C \
   SvtxEvaluator.C \
-  SvtxEvaluator_Dict.C
+  SvtxEvaluator_Dict.C \
+  MomentumEvaluator.C \
+  MomentumEvaluator_Dict.C \
+  PHG4DstCompressReco.C \
+  PHG4DstCompressReco_Dict.C
 
 # Rule for generating table CINT dictionaries.
 %_Dict.C: %.h %LinkDef.h
-	rootcint -f $@ -c $(DEFAULT_INCLUDES) $(INCLUDES) $^
-
-%_Dict.cpp: %.h %LinkDef.h
-	rootcint -f $@ -c $(DEFAULT_INCLUDES) $(INCLUDES) $^
+	rootcint -f $@ @CINTDEFS@ -c $(DEFAULT_INCLUDES) $(AM_CPPFLAGS) $^
 
 ################################################
 # linking tests
@@ -82,4 +111,4 @@ testexternals.C:
 	echo "}" >> $@
 
 clean-local:
-	rm -f *Dict*
+	rm -f *Dict* testexternals.C *.pcm

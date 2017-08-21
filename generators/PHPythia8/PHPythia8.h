@@ -8,19 +8,16 @@
 #include <Pythia8/Pythia.h>
 #endif
 
-#include <Rtypes.h>
+#ifndef __CINT__
+#include <gsl/gsl_rng.h>
+#endif
 
 #include <iostream>
-#include <fstream>
 #include <string>
-#include <cmath>
 
 class PHCompositeNode;
 class PHHepMCGenEvent;
 class PHHepMCFilter;
-class TTree;
-class TFile;
-class TRandom;
 
 class PHPy8GenTrigger;
 
@@ -40,7 +37,7 @@ public:
   PHPythia8(const std::string &name = "PHPythia8");
   virtual ~PHPythia8();
 
-  int Init(PHCompositeNode *topNode);  
+  int Init(PHCompositeNode *topNode);
   int process_event(PHCompositeNode *topNode); 
   int ResetEvent(PHCompositeNode *topNode); 
   int End(PHCompositeNode *topNode);
@@ -51,12 +48,10 @@ public:
 
   void print_config() const;
 
-  void set_seed(const int s) { _seed = s; }
-
   /// set event selection criteria
   void register_trigger(PHPy8GenTrigger *theTrigger);
-  void set_trigger_OR() { _triggersOR = true; } // default true
-  void set_trigger_AND() { _triggersAND = true; }
+  void set_trigger_OR() { _triggersOR = true; _triggersAND = false; } // default true
+  void set_trigger_AND() { _triggersAND = true; _triggersOR = false; }
 
   /// pass commands directly to PYTHIA8
   void process_string(std::string s) {_commands.push_back(s);}
@@ -90,7 +85,6 @@ private:
   std::string _node_name;
 
   // vertex placement
-  TRandom *_rand;
   bool _useBeamVtx;
   double _beamX, _beamXsigma;
   double _beamY, _beamYsigma;
@@ -108,11 +102,14 @@ private:
 
   std::string _configFile;
   std::vector<std::string> _commands;
-  long int _seed;		
   
   // HepMC
   HepMC::Pythia8ToHepMC *_pythiaToHepMC;
   PHHepMCGenEvent *_phhepmcevt;
+
+#ifndef __CINT__
+  gsl_rng *RandomGenerator;
+#endif
 };
 
 #endif	/* __PHPYTHIA8_H__ */

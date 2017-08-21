@@ -1,10 +1,10 @@
 #include "PHG4SectorSubsystem.h"
 #include "PHG4SectorDetector.h"
-#include "PHG4SectorEventAction.h"
+#include "PHG4EventActionClearZeroEdep.h"
 #include "PHG4SectorSteppingAction.h"
 
 #include <g4main/PHG4HitContainer.h>
-#include <fun4all/getClass.h>
+#include <phool/getClass.h>
 
 #include <Geant4/globals.hh>
 
@@ -52,13 +52,13 @@ PHG4SectorSubsystem::Init(PHCompositeNode* topNode)
         {
 
           dstNode->addNode(new PHIODataNode<PHObject>(block_hits =
-              new PHG4HitContainer(), nodename.str().c_str(), "PHObject"));
+						      new PHG4HitContainer(nodename.str()), nodename.str().c_str(), "PHObject"));
 
         }
       // create stepping action
       steppingAction_ = new PHG4SectorSteppingAction(detector_);
 
-      eventAction_ = new PHG4SectorEventAction(topNode, nodename.str());
+      eventAction_ = new PHG4EventActionClearZeroEdep(topNode, nodename.str());
     }
   return 0;
 

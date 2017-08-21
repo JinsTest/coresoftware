@@ -71,9 +71,6 @@ typedef long size_type;
 #pragma link C++ class std::greater<int>+;
 #pragma link C++ class std::less<int>+;
 
-#pragma link C++ class Fun4AllHepMCInputManager-!;
-#pragma link C++ class Fun4AllHepMCOutputManager-!;
-#pragma link C++ class Fun4AllOscarInputManager-!;
 #pragma link C++ class PHHepMCGenEvent+;
 #pragma link C++ class PHGenEvent+;
 #pragma link C++ class PHGenEventv1+;

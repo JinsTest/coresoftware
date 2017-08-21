@@ -2,8 +2,6 @@
 #include "PHG4BlockCellGeom.h"
 #include <cmath>
 
-ClassImp(PHG4BlockCellGeomContainer)
-
 using namespace std;
 
 PHG4BlockCellGeomContainer::PHG4BlockCellGeomContainer()
@@ -25,7 +23,7 @@ void
 PHG4BlockCellGeomContainer::identify(std::ostream& os) const
 {
   map<int,PHG4BlockCellGeom *>::const_iterator iter;
-  for (iter=layergeoms.begin(); iter != layergeoms.end(); iter++)
+  for (iter=layergeoms.begin(); iter != layergeoms.end(); ++iter)
     {
       cout << "layer " << iter->first << endl;
       (iter->second)->identify(os);

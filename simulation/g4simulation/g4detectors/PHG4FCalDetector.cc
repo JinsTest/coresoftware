@@ -30,7 +30,11 @@ PHG4FCalDetector::PHG4FCalDetector( PHCompositeNode *Node ) :
   segment_length(length/((double)(segments_per_column))),
   segment_thickness(scintillator_thickness/((double)(segments_per_thickness))),
   z_position(100.0 * cm),
-  layer_separation(1.0 * mm)
+  layer_separation(1.0 * mm),
+  AbsorberMaterial(NULL),
+  ScintillatorMaterial(NULL),
+  stepping_action(NULL),
+  _region(NULL)
 {
   
 }
@@ -147,7 +151,7 @@ bool PHG4FCalDetector::isInScintillator(G4VPhysicalVolume * volume)
 {
   //loop over the physical volumes and see if this is a match
   std::map<unsigned int, G4VPhysicalVolume*>::iterator vol_iter = scintillator_physi_.begin();
-  for ( ; vol_iter != scintillator_physi_.end(); vol_iter ++ )
+  for ( ; vol_iter != scintillator_physi_.end(); ++vol_iter )
   {
     if ( vol_iter->second == volume )
       return true;
@@ -161,7 +165,7 @@ int PHG4FCalDetector::getScintillatorLayer(G4VPhysicalVolume * volume)
 {
   //loop over the physical volumes and see if this is a match
   std::map<unsigned int, G4VPhysicalVolume*>::iterator vol_iter = scintillator_physi_.begin();
-  for ( ; vol_iter != scintillator_physi_.end(); vol_iter ++ )
+  for ( ; vol_iter != scintillator_physi_.end(); ++vol_iter )
   {
     if ( vol_iter->second == volume )
       return vol_iter->first;

@@ -7,13 +7,10 @@
 
 using namespace std;
 
-/* to keep backward compatibility, default type of stored object is PHTable */
 PHNode::PHNode() : 
   parent(NULL),
   persistent(true),
   type("PHNode"),
-  objecttype("PHTable"),
-  name(""),
   reset_able(true)
 {
   return;
@@ -23,21 +20,32 @@ PHNode::PHNode(const string& n) :
   parent(NULL),
   persistent(true),
   type("PHNode"),
-  objecttype("PHTable"),
-  name(n),
   reset_able(true)
 {
+  if (n.find(".") != string::npos)
+    {
+      cout << PHWHERE << " No nodenames containing decimal point possible: "
+	   << n << endl;
+      exit(1);
+    }
+  name = n;
   return;
 }
 
-PHNode::PHNode(const string &n, const string &objtype ) : 
+PHNode::PHNode(const string& n, const string& typ) : 
   parent(NULL),
   persistent(true),
   type("PHNode"),
-  objecttype(objtype),
-  name(n),
+  objecttype(typ),
   reset_able(true)
 {
+  if (n.find(".") != string::npos)
+    {
+      cout << PHWHERE << " No nodenames containing decimal point possible: "
+	   << n << endl;
+      exit(1);
+    }
+  name = n;
   return;
 }
 
@@ -55,6 +63,7 @@ PHNode::PHNode(const PHNode &phn):
   type(phn.type),
   objecttype(phn.objecttype),
   name(phn.name),
+  objectclass(phn.objectclass),
   reset_able(phn.reset_able)
 {
   cout << "copy ctor not implemented because of pointer to parent" << endl;
@@ -86,7 +95,7 @@ PHNode::getResetFlag() const
 std::ostream & 
 operator << (std::ostream & stream, const PHNode & node)
 {
-   stream << node.getType() << " : " << node.getName();
+  stream << node.getType() << " : " << node.getName() << " class " << node.getClass();
 
    return stream;
 }

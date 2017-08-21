@@ -2,7 +2,7 @@
 #include "PHG4Detector.h"
 #include "PHG4RegionInformation.h"
 
-#include <fun4all/recoConsts.h>
+#include <phool/recoConsts.h>
 
 #include <Geant4/G4Box.hh>
 #include <Geant4/G4Element.hh>
@@ -35,6 +35,15 @@ PHG4PhenixDetector::PHG4PhenixDetector( void ):
   worldshape("G4TUBS"),
   worldmaterial("G4_AIR")
 {
+}
+
+PHG4PhenixDetector::~PHG4PhenixDetector()
+{
+  while (detectors_.begin() != detectors_.end())
+    {
+      delete detectors_.back();
+      detectors_.pop_back();
+    }
 }
 
 
@@ -84,7 +93,7 @@ G4VPhysicalVolume* PHG4PhenixDetector::Construct()
   }
   
   // construct all detectors
-  for( DetectorList::iterator iter = detectors_.begin(); iter != detectors_.end(); iter++ )
+  for( DetectorList::iterator iter = detectors_.begin(); iter != detectors_.end(); ++iter )
   {
     if( *iter )
     {

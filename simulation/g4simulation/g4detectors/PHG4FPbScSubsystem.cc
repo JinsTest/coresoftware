@@ -2,20 +2,21 @@
 #include "PHG4FPbScDetector.h"
 #include "PHG4FPbScSteppingAction.h"
 #include "PHG4FPbScRegionSteppingAction.h"
-#include "g4main/PHG4NullSteppingAction.h"
-#include "PHG4FPbScEventAction.h"
+#include "PHG4EventActionClearZeroEdep.h"
 
 #include <g4main/PHG4HitContainer.h>
-#include <fun4all/getClass.h>
+#include <phool/getClass.h>
 
 #include <Geant4/globals.hh>
 
 #include <sstream>
 
+using namespace std;
+
 //_______________________________________________________________________
-PHG4FPbScSubsystem::PHG4FPbScSubsystem( const char* name ):
+PHG4FPbScSubsystem::PHG4FPbScSubsystem( const string &name ):
 PHG4Subsystem( name ),
-detector_( 0 )
+detector_( NULL ), steppingAction_(NULL), eventAction_(NULL), x_position(0), y_position(0), z_position(0)
 {
 }
 
@@ -33,7 +34,7 @@ int PHG4FPbScSubsystem::Init( PHCompositeNode* topNode )
     
     PHNodeIterator iter( topNode );
     PHCompositeNode *dstNode = dynamic_cast<PHCompositeNode*>(iter.findFirst("PHCompositeNode","DST" ));
-    dstNode->addNode( new PHIODataNode<PHObject>( fcal_hits = new PHG4HitContainer(), ("G4HIT_"+ThisName).c_str(),"PHObject" ));
+    dstNode->addNode( new PHIODataNode<PHObject>( fcal_hits = new PHG4HitContainer(("G4HIT_"+ThisName)), ("G4HIT_"+ThisName).c_str(),"PHObject" ));
   }
   
   // create detector
@@ -44,7 +45,7 @@ int PHG4FPbScSubsystem::Init( PHCompositeNode* topNode )
   // create stepping action
   steppingAction_ = new PHG4FPbScSteppingAction(detector_);
 
-  eventAction_ = new PHG4FPbScEventAction(topNode, hitnodename.str());
+  eventAction_ = new PHG4EventActionClearZeroEdep(topNode, hitnodename.str());
 
   return 0;
   

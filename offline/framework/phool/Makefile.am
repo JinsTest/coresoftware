@@ -5,7 +5,7 @@ lib_LTLIBRARIES = libphool.la
 BUILT_SOURCES = \
   testexternals.cc
 
-INCLUDES = \
+AM_CPPFLAGS = \
   -I$(includedir) \
   -I$(OFFLINE_MAIN)/include \
   -I`root-config --incdir`
@@ -28,12 +28,15 @@ libphool_la_SOURCES = \
   PHNodeReset.cc \
   PHObject.cc \
   PHOperation.cc \
+  PHRandomSeed.cc \
   PHRawOManager.cc \
   PHTimer.cc \
   PHTimeServer.cc \
-  PHTimeStamp.cc
+  PHTimeStamp.cc \
+  recoConsts.cc
 
 pkginclude_HEADERS =  \
+  getClass.h \
   PHCompositeNode.h \
   PHDataNode.h \
   PHDataNodeIterator.h \
@@ -49,13 +52,15 @@ pkginclude_HEADERS =  \
   phool.h \
   phooldefs.h \
   PHOperation.h \
+  PHRandomSeed.h \
   PHPointerList.h \
   PHPointerListIterator.h \
   PHRawOManager.h \
   PHTimer.h \
   PHTimeServer.h \
   PHTimeStamp.h \
-  PHTypedNodeIterator.h
+  PHTypedNodeIterator.h \
+  recoConsts.h
 
 noinst_HEADERS = \
   PHBase_LinkDef.h
@@ -80,11 +85,12 @@ PHBase_dict.cc : \
   PHFlag.h \
   phool.h \
   PHObject.h \
+  PHRandomSeed.h \
   PHTimeServer.h \
   PHTimeStamp.h \
+  recoConsts.h \
   PHBase_LinkDef.h
-	rootcint -f $@ -c $(DEFAULT_INCLUDES) $(INCLUDES) $^
+	rootcint -f $@ @CINTDEFS@ -c $(DEFAULT_INCLUDES) $(AM_CPPFLAGS) $^
 
 clean-local:
-	rm -f *_dict*
-	rm -f testexternals.cc
+	rm -f *_dict* testexternals.cc *.pcm

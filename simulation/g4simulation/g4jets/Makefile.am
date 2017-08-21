@@ -1,27 +1,35 @@
 AUTOMAKE_OPTIONS = foreign
 
-INCLUDES = \
+AM_CPPFLAGS = \
   -I$(includedir) \
   -I$(OFFLINE_MAIN)/include  \
   -I${G4_MAIN}/include \
-  -I${G4_MAIN}/include/Geant4 \
   -I`root-config --incdir`
 
-lib_LTLIBRARIES = libg4jets.la
+lib_LTLIBRARIES = \
+   libg4jets_io.la \
+   libg4jets.la
 
 AM_CXXFLAGS = \
  -Wall -Werror -msse2
 
-libg4jets_la_LDFLAGS = \
+AM_LDFLAGS = \
   -L$(libdir) \
   -L$(OFFLINE_MAIN)/lib \
+  `geant4-config --libs`
+
+libg4jets_io_la_LIBADD = \
+  -lphool
+
+libg4jets_la_LIBADD = \
   -lfun4all \
   -lphg4hit \
   -lg4hough_io \
   -lcemc_io \
+  -lg4vertex_io \
   -lCGAL \
   -lfastjet \
-  `geant4-config --libs`
+  libg4jets_io.la
 
 pkginclude_HEADERS = \
   Jet.h \
@@ -39,7 +47,7 @@ pkginclude_HEADERS = \
 
 #pkginclude_HEADERS = $(include_HEADERS)
 
-libg4jets_la_SOURCES = \
+libg4jets_io_la_SOURCES = \
   Jet.C \
   Jet_Dict.C \
   JetV1.C \
@@ -47,7 +55,9 @@ libg4jets_la_SOURCES = \
   JetMap.C \
   JetMap_Dict.C \
   JetMapV1.C \
-  JetMapV1_Dict.C \
+  JetMapV1_Dict.C
+
+libg4jets_la_SOURCES = \
   JetReco.C \
   JetReco_Dict.C \
   TruthJetInput.C \
@@ -63,21 +73,20 @@ libg4jets_la_SOURCES = \
 
 # Rule for generating table CINT dictionaries.
 %_Dict.C: %.h %LinkDef.h
-	rootcint -f $@ -c $(DEFAULT_INCLUDES) $(INCLUDES) $^
-
-%_Dict.cpp: %.h %LinkDef.h
-	rootcint -f $@ -c $(DEFAULT_INCLUDES) $(INCLUDES) $^
+	rootcint -f $@ @CINTDEFS@ -c $(DEFAULT_INCLUDES) $(AM_CPPFLAGS) $^
 
 ################################################
 # linking tests
 
-noinst_PROGRAMS = testexternals
+noinst_PROGRAMS = \
+  testexternals_g4jets_io \
+  testexternals_g4jets
 
-BUILT_SOURCES = \
-  testexternals.C
+testexternals_g4jets_io_SOURCES = testexternals.C
+testexternals_g4jets_io_LDADD = libg4jets_io.la
 
-testexternals_LDADD = \
-  libg4jets.la
+testexternals_g4jets_SOURCES = testexternals.C
+testexternals_g4jets_LDADD = libg4jets.la
 
 testexternals.C:
 	echo "//*** this is a generated file. Do not commit, do not edit" > $@
@@ -87,4 +96,4 @@ testexternals.C:
 	echo "}" >> $@
 
 clean-local:
-	rm -f *Dict*
+	rm -f *Dict* testexternals.C *.pcm

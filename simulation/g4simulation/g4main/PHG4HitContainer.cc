@@ -1,15 +1,22 @@
 #include "PHG4HitContainer.h"
 #include "PHG4Hit.h"
 #include "PHG4Hitv1.h"
-#include "PHG4HitDefs.h"
 
 #include <phool/phool.h>
+
+#include <TSystem.h>
 
 #include <cstdlib>
 
 using namespace std;
 
 PHG4HitContainer::PHG4HitContainer()
+  : id(-1), hitmap(), layers()
+{
+}
+
+PHG4HitContainer::PHG4HitContainer(const std::string &nodename)
+  : id(PHG4HitDefs::get_volume_id(nodename)), hitmap(), layers()
 {
 }
 
@@ -70,12 +77,12 @@ PHG4HitContainer::getmaxkey(const unsigned int detid)
 PHG4HitDefs::keytype
 PHG4HitContainer::genkey(const unsigned int detid)
 {
-  if ((detid >> PHG4HitDefs::keybits) > 0)
-    {
-      cout << " detector id too large: " << detid << endl;
-      exit(1);
-    }
   PHG4HitDefs::keytype detidlong = detid;
+  if ((detidlong >> PHG4HitDefs::keybits) > 0)
+    {
+      cout << PHWHERE << " detector id too large: " << detid << endl;
+      gSystem->Exit(1);
+    }
   PHG4HitDefs::keytype shiftval = detidlong << PHG4HitDefs::hit_idbits;
   //  cout << "max index: " << (detminmax->second)->first << endl;
   // after removing hits with no energy deposition, we have holes
@@ -102,7 +109,7 @@ PHG4HitContainer::AddHit(PHG4Hit *newhit)
   PHG4HitDefs::keytype key = newhit->get_hit_id();
   if (hitmap.find(key) != hitmap.end())
     {
-      cout << "hit with id  0x" << hex << key << " exists already" << endl;
+      cout << "hit with id  0x" << hex << key << dec << " exists already" << endl;
       return hitmap.find(key);
     }
   PHG4HitDefs::keytype detidlong = key >>  PHG4HitDefs::hit_idbits;
@@ -124,12 +131,12 @@ PHG4HitContainer::AddHit(const unsigned int detid, PHG4Hit *newhit)
 
 PHG4HitContainer::ConstRange PHG4HitContainer::getHits(const unsigned int detid) const
 {
-  if ((detid >> PHG4HitDefs::keybits) > 0)
+  PHG4HitDefs::keytype detidlong = detid;
+  if ((detidlong >> PHG4HitDefs::keybits) > 0)
     {
       cout << " detector id too large: " << detid << endl;
       exit(1);
     }
-  PHG4HitDefs::keytype detidlong = detid;
   PHG4HitDefs::keytype keylow = detidlong << PHG4HitDefs::hit_idbits;
   PHG4HitDefs::keytype keyup = ((detidlong + 1) << PHG4HitDefs::hit_idbits) -1 ;
   ConstRange retpair;

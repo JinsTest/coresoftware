@@ -11,17 +11,16 @@
 #include "PHG4RICHSubsystem.h"
 #include "PHG4RICHDetector.h"
 #include "PHG4RICHSteppingAction.h"
-#include "g4main/PHG4NullSteppingAction.h"
 
 #include <g4main/PHG4HitContainer.h>
-#include <fun4all/getClass.h>
+#include <phool/getClass.h>
 
 using namespace ePHENIXRICH;
 
 //_______________________________________________________________________
 PHG4RICHSubsystem::PHG4RICHSubsystem( const char* name ):
 PHG4Subsystem( name ),
-detector_( 0 )
+detector_( NULL )
 {
 }
 
@@ -36,13 +35,14 @@ int PHG4RICHSubsystem::Init( PHCompositeNode* topNode )
     
     PHNodeIterator iter( topNode );
     PHCompositeNode *dstNode = dynamic_cast<PHCompositeNode*>(iter.findFirst("PHCompositeNode","DST" ));
-    dstNode->addNode( new PHIODataNode<PHObject>( rich_hits = new PHG4HitContainer(), "G4HIT_RICH","PHObject" ));
+    dstNode->addNode( new PHIODataNode<PHObject>( rich_hits = new PHG4HitContainer("G4HIT_RICH"), "G4HIT_RICH","PHObject" ));
     
   }
   
   // create detector
   detector_ = new PHG4RICHDetector(topNode, geom);
   detector_->Verbosity(Verbosity());
+  detector_->OverlapCheck(overlapcheck);
   
   // create stepping action
   

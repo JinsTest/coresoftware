@@ -239,7 +239,7 @@ namespace PHG4Sector
     {
       int n = 0;
       for (t_layer_list::const_iterator it = layer_list.begin();
-          it != layer_list.end(); it++)
+          it != layer_list.end(); ++it)
         if ((*it).active)
           n++;
       return n;
@@ -376,11 +376,19 @@ namespace PHG4Sector
     void
     Construct_Sectors(G4LogicalVolume* WorldLog);
 
+    void
+    OverlapCheck( bool check )
+    {
+      overlapcheck_sector = check;
+    }
+
   protected:
+
+    bool overlapcheck_sector;
 
     G4VSolid *
     Construct_Sectors_Plane( //
-        const std::string name, //
+        const std::string &name, //
         const double start_z, //
         const double thickness, //
         G4VSolid *SecConeBoundary_Det //

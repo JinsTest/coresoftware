@@ -1,62 +1,87 @@
 #include "RawTowerv1.h"
-#include <iostream>
-#include <algorithm>
 
-#include <map>
+#include <cmath>
+#include <iostream>
 
 using namespace std;
 
-ClassImp(RawTowerv1)
-
-RawTowerv1::RawTowerv1() : 
-  bineta(-1), 
-  binphi(-1)
+RawTowerv1::RawTowerv1() :
+  towerid(~0), // initialize all bits on
+  energy(0),
+  time(NAN)
 {}
 
-RawTowerv1::RawTowerv1(const int ieta, const int iphi) :
-  bineta(ieta),
-  binphi(iphi)
-{}
-
-RawTowerv1::~RawTowerv1()
-{}
-
-void RawTowerv1::Reset()
+RawTowerv1::RawTowerv1(const RawTower & tower)
 {
-  ecells.clear();
+  towerid = (tower.get_id());
+  energy = (tower.get_energy());
+  time = (tower.get_time());
+
+  CellConstRange cell_range = tower.get_g4cells();
+
+  for (CellConstIterator cell_iter = cell_range.first;
+      cell_iter != cell_range.second; ++cell_iter)
+    {
+      add_ecell(cell_iter->first, cell_iter->second);
+    }
+
+  ShowerConstRange shower_range = tower.get_g4showers();
+
+  for (ShowerConstIterator shower_iter = shower_range.first;
+      shower_iter != shower_range.second; ++shower_iter)
+    {
+      add_eshower(shower_iter->first, shower_iter->second);
+    }
 }
 
-int RawTowerv1::isValid() const
+RawTowerv1::RawTowerv1(RawTowerDefs::keytype id) :
+  towerid(id),
+  energy(0),
+  time(NAN)
+{}
+
+RawTowerv1::RawTowerv1(const unsigned int ieta, const unsigned int iphi) :
+  towerid(0),
+  energy(0),
+  time(NAN)
+{
+  towerid = RawTowerDefs::encode_towerid(RawTowerDefs::NONE, ieta, iphi);
+}
+
+RawTowerv1::RawTowerv1(const RawTowerDefs::CalorimeterId caloid,
+                       const unsigned int ieta, const unsigned int iphi) :
+  towerid(0),
+  energy(0),
+  time(NAN)
+{
+  towerid = RawTowerDefs::encode_towerid(caloid, ieta, iphi);
+}
+
+void
+RawTowerv1::Reset()
+{
+  energy = 0;
+  time = NAN;
+  ecells.clear();
+  eshowers.clear();
+}
+
+int
+RawTowerv1::isValid() const
 {
   return get_energy() != 0;
 }
 
-void RawTowerv1::identify(std::ostream& os) const
+void
+RawTowerv1::identify(std::ostream& os) const
 {
-  os << "RawTowerv1: etabin: " << bineta << ", phibin: " << binphi 
-     << " energy=" << get_energy() << std::endl;
+  os << "RawTowerv1: etabin: " << get_bineta() << ", phibin: " << get_binphi()
+      << " energy=" << get_energy() << std::endl;
 }
 
-bool RawTowerv1::is_adjacent(RawTower& tower)
-{
-  if (bineta - 1 <= tower.get_bineta() && tower.get_bineta() <= bineta + 1)
-    {
-      if (binphi - 1 <= tower.get_binphi() && tower.get_binphi() <= binphi + 1)
-        {
-          return true;
-        }
-      // cluster through the phi-wraparound
-      //       else if(((tower.get_binphi() == _nphi-1) && (binphi == 0)) ||
-      // 	      ((tower.get_binphi() == 0) && (binphi == _nphi-1)))
-      // 	{
-      // 	  return true;
-      // 	}
-    }
-
-  return false;
-}
-
-void RawTowerv1::add_ecell(const unsigned int g4cellid, const float ecell)
+void
+RawTowerv1::add_ecell(const PHG4CellDefs::keytype g4cellid,
+    const float ecell)
 {
   if (ecells.find(g4cellid) == ecells.end())
     {
@@ -68,14 +93,15 @@ void RawTowerv1::add_ecell(const unsigned int g4cellid, const float ecell)
     }
 }
 
-float RawTowerv1::get_energy() const
+void 
+RawTowerv1::add_eshower(const int g4showerid, const float eshower)
 {
-  map<unsigned int, float>::const_iterator iter;
-  float esum = 0;
-  for (iter = ecells.begin(); iter != ecells.end(); ++iter)
+  if (eshowers.find(g4showerid) == eshowers.end())
     {
-      esum += iter->second;
+      eshowers[g4showerid] = eshower;
     }
-  return esum;
+  else
+    {
+      eshowers[g4showerid] += eshower;
+    }
 }
-

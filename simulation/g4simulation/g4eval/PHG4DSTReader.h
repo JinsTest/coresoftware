@@ -7,25 +7,11 @@
  * \version $Revision: 1.7 $
  * \date $Date: 2015/02/27 23:42:23 $
  */
-
 #ifndef PHG4DSTREADER_H_
 #define PHG4DSTREADER_H_
 
-#include <HepMC/GenEvent.h>
-#include <HepMC/SimpleVector.h>
 #include <fun4all/SubsysReco.h>
-#include <string>
-#include <iostream>
-#include <vector>
-#include <TClonesArray.h>
-#include <g4main/PHG4HitEval.h>
-#include <g4main/PHG4Particlev2.h>
-#include <g4main/PHG4Particle.h>
-#include <g4main/PHG4VtxPointv1.h>
-#include <g4cemc/RawTowerv2.h>
-//#include <PHPythiaJet/PHPyJetV2.h>
 
-class TTree;
 
 #ifndef __CINT__
 
@@ -33,9 +19,23 @@ class TTree;
 
 #endif
 
+#include <iostream>
+#include <string>
+#include <set>
+#include <vector>
+
+class PHCompositeNode;
+
+class PHG4Particle;
+
+class TClonesArray;
+class TTree;
+
+
 /*!
  * \brief PHG4DSTReader save information from DST to an evaluator, which could include hit. particle, vertex, towers and jet (to be activated)
  */
+
 class PHG4DSTReader : public SubsysReco
 {
 public:
@@ -76,10 +76,7 @@ public:
   void
   AddJet(const std::string &name)
   {
-    std::cout
-        << "PHG4DSTReader::AddJet - Error - temp. disabled until jet added back to sPHENIX software"
-        << std::endl;
-//    _jet_postfix.push_back(name);
+    _jet_postfix.push_back(name);
   }
 
   //! load all particle in truth info module?
@@ -129,7 +126,7 @@ protected:
 
   std::vector<std::string> _node_postfix;
   std::vector<std::string> _tower_postfix;
-//  std::vector<std::string> _jet_postfix;
+  std::vector<std::string> _jet_postfix;
 //  std::vector<std::string> _node_name;
   int nblocks;
 
@@ -152,13 +149,13 @@ protected:
   };
   typedef std::vector<record> records_t;
   records_t _records;
-
+  /*
   typedef PHG4Particlev2 part_type;
   typedef PHG4HitEval hit_type;
   typedef PHG4VtxPointv1 vertex_type;
   typedef RawTowerv1 RawTower_type;
-//  typedef PHPyJetV2 PHPyJet_type;
-
+  typedef JetV1 PHPyJet_type;
+  */
 #endif
 
   int _event;
@@ -179,16 +176,13 @@ protected:
 
   typedef std::set<int> PartSet_t;
   PartSet_t _particle_set;
+  PartSet_t _vertex_set;
 
   //! save vertex for particles?
   bool _save_vertex;
 
   //! zero suppression for all calorimeters
   double _tower_zero_sup;
-
-  typedef std::map<int, int> VtxMap_t;
-  VtxMap_t _vertex_map_old2new;
-  VtxMap_t _vertex_map_new2old;
 
 #ifndef __CINT__
 
